@@ -80,7 +80,7 @@ class WDAPI:
             device_info_json['volumes']['size']['used'] = device_info.find('.//total_used_size').text
             device_info_json['volumes']['size']['unused'] = device_info.find('.//total_unused_size').text
             
-            print(device_info_json)
+            return device_info_json
         else:
             print(f"Failed to retrieve device info: {response.status_code}")
 
