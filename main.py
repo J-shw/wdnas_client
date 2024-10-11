@@ -1,5 +1,5 @@
 import requests
-import rc4
+# import rc4
 
 RAW_DATA_STRING = 'cmd=wd_login&username={username}&pwd={enc_password}'
 HOST = "wdmycloudmirror.local"
