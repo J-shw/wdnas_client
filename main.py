@@ -83,12 +83,3 @@ class WDAPI:
             return device_info_json
         else:
             print(f"Failed to retrieve device info: {response.status_code}")
-
-
-if __name__ == "__main__":
-    username = input("Username: ").lower()
-    enc_password = input("RC4 Password: ")
-
-    wdNAS = WDAPI(username, enc_password)
-
-    wdNAS.system_info() 
