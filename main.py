@@ -31,8 +31,29 @@ class WDAPI:
         else:
             print(f"Request failed: {response.status_code}")
 
+    def system_info(self):
+        url = f"{SCHEME}{HOST}/xml/sysinfo.xml"  # Replace with the actual endpoint
+        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
+        phpsessid = self.session.cookies['PHPSESSID']
+        headers = {
+            "Host": HOST,
+            "X-CSRF-Token": wd_csrf_token,
+            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};"
+        }
+
+        response = self.session.get(url, headers=headers)
+
+        if response.status_code == 200:
+            device_info = response.content
+            print(device_info)
+        else:
+            print(f"Failed to retrieve device info: {response.status_code}")
+
+
 if __name__ == "__main__":
     username = input("Username: ").lower()
     enc_password = input("RC4 Password: ")
 
-    mycloud_api = WDAPI(username, enc_password)
+    wdNAS = WDAPI(username, enc_password)
+
+    wdNAS.system_info() 
