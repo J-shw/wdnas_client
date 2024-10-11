@@ -2,24 +2,24 @@ import requests
 # import rc4
 from xml.etree import ElementTree
 
-
 RAW_LOGIN_STRING = 'cmd=wd_login&username={username}&pwd={enc_password}'
-HOST = "wdmycloudmirror.local"
 SCHEME = "http://"
 
-class WDAPI:
-    def __init__(self, username, enc_password):
+
+class client:
+    def __init__(self, username, enc_password, host):
+        self.host = host
         self.username = username
         self.enc_password = enc_password
         self.session = requests.Session()
         self.login()
 
     def login(self):
-        url = f"{SCHEME}{HOST}/cgi-bin/login_mgr.cgi"
+        url = f"{SCHEME}{self.host}/cgi-bin/login_mgr.cgi"
         content_length = 1
         headers = {
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "Host": HOST,
+            "Host": self.host,
             "Content-Length": str(content_length),
         }
         data = RAW_LOGIN_STRING.format(username=self.username, enc_password=self.enc_password)
@@ -34,11 +34,11 @@ class WDAPI:
             print(f"Request failed: {response.status_code}")
 
     def system_info(self):
-        url = f"{SCHEME}{HOST}/xml/sysinfo.xml"  # Replace with the actual endpoint
+        url = f"{SCHEME}{self.host}/xml/sysinfo.xml"  # Replace with the actual endpoint
         wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
         phpsessid = self.session.cookies['PHPSESSID']
         headers = {
-            "Host": HOST,
+            "Host": self.host,
             "X-CSRF-Token": wd_csrf_token,
             "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};"
         }
