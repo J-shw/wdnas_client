@@ -1,5 +1,7 @@
 import requests
 # import rc4
+from xml.etree import ElementTree
+
 
 RAW_LOGIN_STRING = 'cmd=wd_login&username={username}&pwd={enc_password}'
 HOST = "wdmycloudmirror.local"
@@ -44,8 +46,37 @@ class WDAPI:
         response = self.session.get(url, headers=headers)
 
         if response.status_code == 200:
-            device_info = response.content
-            print(device_info)
+            device_info = ElementTree.fromstring(response.content)
+            device_info_json = {"disks": {}, "volumes": {}}
+
+            for disk in device_info.iter('disk'):
+                device_info_json['disks'][disk.attrib['id']] = {
+                    "vendor":  disk.findtext('vendor'),
+                    "model":  disk.findtext('model'),
+                    "rev":  disk.findtext('rev'),
+                    "sn":  disk.findtext('sn'),
+                    "size":  disk.findtext('size'),
+                    "failed":  bool(int(disk.findtext('failed'))),
+                    "healthy":  bool(int(disk.findtext('healthy'))),
+                    "removable":  bool(int(disk.findtext('removable'))),
+                    "over_temp":  bool(int(disk.findtext('over_temp'))),
+                    "temp": disk.findtext('temp'),
+                    "sleep":  bool(int(disk.findtext('sleep')))
+                }
+            
+            for disk in device_info.iter('vol'):
+                device_info_json['volumes'][disk.attrib['id']] = {
+                    "name":  disk.findtext('name'),
+                    "label":  disk.findtext('label'),
+                    "encrypted":  bool(int(disk.findtext('encrypted'))),
+                    "unlocked":  bool(int(disk.findtext('unlocked'))),
+                    "mounted":  bool(int(disk.findtext('mounted'))),
+                    "size":  disk.findtext('size'),
+                }
+            
+            device_info_json['volumes']['total size'] = device_info.find('.//total_size')
+            
+            print(device_info_json)
         else:
             print(f"Failed to retrieve device info: {response.status_code}")
 
