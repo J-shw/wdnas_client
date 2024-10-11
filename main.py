@@ -51,6 +51,8 @@ class WDAPI:
 
             for disk in device_info.iter('disk'):
                 device_info_json['disks'][disk.attrib['id']] = {
+                    "name":  disk.findtext('name'),
+                    "connected":  bool(int(disk.findtext('connected'))),
                     "vendor":  disk.findtext('vendor'),
                     "model":  disk.findtext('model'),
                     "rev":  disk.findtext('rev'),
