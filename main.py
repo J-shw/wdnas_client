@@ -1,5 +1,7 @@
 import requests
 # import rc4
+from xml.etree import ElementTree
+
 
 RAW_LOGIN_STRING = 'cmd=wd_login&username={username}&pwd={enc_password}'
 HOST = "wdmycloudmirror.local"
@@ -31,8 +33,62 @@ class WDAPI:
         else:
             print(f"Request failed: {response.status_code}")
 
+    def system_info(self):
+        url = f"{SCHEME}{HOST}/xml/sysinfo.xml"  # Replace with the actual endpoint
+        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
+        phpsessid = self.session.cookies['PHPSESSID']
+        headers = {
+            "Host": HOST,
+            "X-CSRF-Token": wd_csrf_token,
+            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};"
+        }
+
+        response = self.session.get(url, headers=headers)
+
+        if response.status_code == 200:
+            device_info = ElementTree.fromstring(response.content)
+            device_info_json = {"disks": {}, "volumes": {"size":{}}}
+
+            for disk in device_info.iter('disk'):
+                device_info_json['disks'][disk.attrib['id']] = {
+                    "name":  disk.findtext('name'),
+                    "connected":  bool(int(disk.findtext('connected'))),
+                    "vendor":  disk.findtext('vendor'),
+                    "model":  disk.findtext('model'),
+                    "rev":  disk.findtext('rev'),
+                    "sn":  disk.findtext('sn'),
+                    "size":  disk.findtext('size'),
+                    "failed":  bool(int(disk.findtext('failed'))),
+                    "healthy":  bool(int(disk.findtext('healthy'))),
+                    "removable":  bool(int(disk.findtext('removable'))),
+                    "over_temp":  bool(int(disk.findtext('over_temp'))),
+                    "temp": disk.findtext('temp'),
+                    "sleep":  bool(int(disk.findtext('sleep')))
+                }
+            
+            for disk in device_info.iter('vol'):
+                device_info_json['volumes'][disk.attrib['id']] = {
+                    "name":  disk.findtext('name'),
+                    "label":  disk.findtext('label'),
+                    "encrypted":  bool(int(disk.findtext('encrypted'))),
+                    "unlocked":  bool(int(disk.findtext('unlocked'))),
+                    "mounted":  bool(int(disk.findtext('mounted'))),
+                    "size":  disk.findtext('size'),
+                }
+            
+            device_info_json['volumes']['size']['total'] = device_info.find('.//total_size').text
+            device_info_json['volumes']['size']['used'] = device_info.find('.//total_used_size').text
+            device_info_json['volumes']['size']['unused'] = device_info.find('.//total_unused_size').text
+            
+            return device_info_json
+        else:
+            print(f"Failed to retrieve device info: {response.status_code}")
+
+
 if __name__ == "__main__":
     username = input("Username: ").lower()
     enc_password = input("RC4 Password: ")
 
-    mycloud_api = WDAPI(username, enc_password)
+    wdNAS = WDAPI(username, enc_password)
+
+    wdNAS.system_info() 
