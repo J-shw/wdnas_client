@@ -47,7 +47,7 @@ class WDAPI:
 
         if response.status_code == 200:
             device_info = ElementTree.fromstring(response.content)
-            device_info_json = {"disks": {}, "volumes": {}}
+            device_info_json = {"disks": {}, "volumes": {"size":{}}}
 
             for disk in device_info.iter('disk'):
                 device_info_json['disks'][disk.attrib['id']] = {
@@ -74,7 +74,9 @@ class WDAPI:
                     "size":  disk.findtext('size'),
                 }
             
-            device_info_json['volumes']['total size'] = device_info.find('.//total_size')
+            device_info_json['volumes']['size']['total'] = device_info.find('.//total_size').text
+            device_info_json['volumes']['size']['used'] = device_info.find('.//total_used_size').text
+            device_info_json['volumes']['size']['unused'] = device_info.find('.//total_unused_size').text
             
             print(device_info_json)
         else:
