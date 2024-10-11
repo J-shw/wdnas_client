@@ -1,5 +1,6 @@
 import requests
 # import rc4
+from .exceptions import InvalidLoginError, RequestFailedError
 from xml.etree import ElementTree
 
 RAW_LOGIN_STRING = 'cmd=wd_login&username={username}&pwd={enc_password}'
@@ -29,12 +30,12 @@ class client:
             if "PHPSESSID" in response.cookies and "WD-CSRF-TOKEN" in response.cookies:
                 print("Login successful!")
             else:
-                print("Invalid Username/Password or missing cookies")
+                raise InvalidLoginError("Invalid Username/Password or missing cookies")
         else:
-            print(f"Request failed: {response.status_code}")
-
+            raise RequestFailedError(response.status_code)
+        
     def system_info(self):
-        url = f"{SCHEME}{self.host}/xml/sysinfo.xml"  # Replace with the actual endpoint
+        url = f"{SCHEME}{self.host}/xml/sysinfo.xml"
         wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
         phpsessid = self.session.cookies['PHPSESSID']
         headers = {
@@ -82,4 +83,4 @@ class client:
             
             return device_info_json
         else:
-            print(f"Failed to retrieve device info: {response.status_code}")
+            raise RequestFailedError(response.status_code)
