@@ -5,6 +5,10 @@ RAW_DATA_STRING = 'cmd=wd_login&username={username}&pwd={enc_password}'
 HOST = "wdmycloudmirror.local"
 SCHEME =  "http://"
 
+class cookie_store:
+    PHPSESSID = ''
+    PHPWD_CSRF_TOKENSESSID = ''
+
 username = input('Username: ').lower()
 # password = input('Password: ')
 enc_password = input('RC4 Password: ')
@@ -25,8 +29,11 @@ print(cookies)
 
 if response.status_code == 200:
     cookies = response.cookies
-    PHPSESSID = cookies.get("PHPSESSID")
-    PHPWD_CSRF_TOKENSESSID = cookies.get("WD-CSRF-TOKEN")
-    print(PHPSESSID, PHPWD_CSRF_TOKENSESSID)
+    cookie_store.PHPSESSID = cookies.get("PHPSESSID")
+    cookie_store.PHPWD_CSRF_TOKENSESSID = cookies.get("WD-CSRF-TOKEN")
+
+    print(cookie_store.PHPSESSID, cookie_store.PHPWD_CSRF_TOKENSESSID)
+    if (cookie_store.PHPWD_CSRF_TOKENSESSID == None):
+        print('Invalid Username/Password')
 else:
     print("Request failed:", response.status_code)
