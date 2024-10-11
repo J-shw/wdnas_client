@@ -51,3 +51,9 @@ wdNAS = client(username, enc_password, 'wdmycloudmirror.local')
 
 print(wdNAS.system_info())
 ```
+
+## Important Info
+
+I have only tested this on my WD NAS which is a wdmycloud mirror running version 2.13.108
+
+Its an old one and so I cannot say if this system works for any newer WD NAS drives
