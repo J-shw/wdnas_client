@@ -129,8 +129,8 @@ class client:
             json_device_status['cpu'] = int(device_status.find('.//cpu').text.strip('%'))
 
             # Memory
-            json_device_status['memory']['total'] = device_status.find('.//mem_total').text
-            json_device_status['memory']['unused'] = device_status.find('.//mem_free').text
+            json_device_status['memory']['total'] = int(device_status.find('.//mem_total').text)
+            json_device_status['memory']['unused'] = int(device_status.find('.//mem_free').text)
             json_device_status['memory']['simple'] = device_status.find('.//mem2_total').text
 
             return json_device_status
