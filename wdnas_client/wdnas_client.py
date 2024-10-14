@@ -193,3 +193,25 @@ class client:
             return json_latest_version
         else:
             raise RequestFailedError(response.status_code)
+    
+    def accounts(self):
+        url = f"{SCHEME}{self.host}/xml/account.xml"
+        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
+        phpsessid = self.session.cookies['PHPSESSID']
+        headers = {
+            "Host": self.host,
+            "X-CSRF-Token": wd_csrf_token,
+            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};",
+        }
+
+        response = self.session.post(url, headers=headers)
+
+        if response.status_code == 200:
+            accounts = ElementTree.fromstring(response.content)
+
+            json_accounts = {"users": {}}
+
+
+            return json_accounts
+        else:
+            raise RequestFailedError(response.status_code)
