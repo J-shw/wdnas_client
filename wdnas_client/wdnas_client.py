@@ -84,3 +84,20 @@ class client:
             return device_info_json
         else:
             raise RequestFailedError(response.status_code)
+    
+    def share_names(self):
+        url = f"{SCHEME}{self.host}/web/get_share_name_list.php"
+        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
+        phpsessid = self.session.cookies['PHPSESSID']
+        headers = {
+            "Host": self.host,
+            "X-CSRF-Token": wd_csrf_token,
+            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};"
+        }
+
+        response = self.session.get(url, headers=headers)
+
+        if response.status_code == 200:
+            response.content
+        else:
+            raise RequestFailedError(response.status_code)
