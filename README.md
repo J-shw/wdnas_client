@@ -50,6 +50,18 @@ enc_password = input("RC4 Password: ")
 wdNAS = client(username, enc_password, 'wdmycloudmirror.local')
 
 print(wdNAS.system_info())
+
+print(wdNAS.share_names())
+
+print(wdNAS.system_status())
+
+print(wdNAS.system_version())
+
+print(wdNAS.latest_version())
+
+print(wdNAS.accounts())
+
+print(wdNAS.alerts)
 ```
 
 ## Important Info
