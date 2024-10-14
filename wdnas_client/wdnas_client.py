@@ -209,9 +209,30 @@ class client:
         if response.status_code == 200:
             accounts = ElementTree.fromstring(response.content)
 
-            json_accounts = {"users": {}}
+            json_accounts = {"users": {}, "groups": {}}
 
+            for user in accounts.iter('item'):
+                json_accounts['users'][user.findtext('uid')] = {
+                    "name": user.findtext('name'),
+                    "email": user.findtext('email'),
+                    "pwd": user.findtext('pwd'),
+                    "gid": user.findtext('gid'),
+                    "first_name": user.findtext('first_name'),
+                    "hint": user.findtext('hint'),
+                }
 
+            
+            for group in accounts.iter('item'):
+                gid = group.findtext('gid')
+                json_accounts['groups'][gid] = {
+                    "name": group.findtext('name'),
+                    "user_cnt": user.findtext('user_cnt'),
+                }
+
+                json_accounts['groups'][gid]['users'] = []
+                for user in group.iter('users'):
+                    json_accounts['groups'][gid]['users'].append(user.findtext('user'))
+            
             return json_accounts
         else:
             raise RequestFailedError(response.status_code)
