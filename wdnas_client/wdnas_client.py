@@ -163,3 +163,29 @@ class client:
             return json_device_version
         else:
             raise RequestFailedError(response.status_code)
+    
+    def latest_version(self):
+        url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
+        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
+        phpsessid = self.session.cookies['PHPSESSID']
+        headers = {
+            "Host": self.host,
+            "X-CSRF-Token": wd_csrf_token,
+            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};",
+            "Content-Length": str(1),
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        }
+
+        data = 'cmd=get_auto_fw_version'
+        response = self.session.post(url, data=data, headers=headers)
+
+        if response.status_code == 200:
+            latest_version = ElementTree.fromstring(response.content)
+
+            json_latest_version = {"new": None, "data": {}}
+
+            json_latest_version['new'] = bool(int(latest_version.find('.//new').text))
+
+            return json_latest_version
+        else:
+            raise RequestFailedError(response.status_code)
