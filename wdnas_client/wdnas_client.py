@@ -136,3 +136,30 @@ class client:
             return json_device_status
         else:
             raise RequestFailedError(response.status_code)
+
+    def system_version(self):
+        url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
+        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
+        phpsessid = self.session.cookies['PHPSESSID']
+        headers = {
+            "Host": self.host,
+            "X-CSRF-Token": wd_csrf_token,
+            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};",
+            "Content-Length": str(1),
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        }
+
+        data = 'cmd=get_firm_v_xml'
+        response = self.session.post(url, data=data, headers=headers)
+
+        if response.status_code == 200:
+            device_version = ElementTree.fromstring(response.content)
+
+            json_device_version = {"firmware": None, "oled": None}
+
+            json_device_version['firmware'] = device_version.find('.//fw').text
+            json_device_version['oled'] = device_version.find('.//oled').text.strip('\n')
+
+            return json_device_version
+        else:
+            raise RequestFailedError(response.status_code)
