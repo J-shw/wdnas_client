@@ -1,5 +1,4 @@
-import requests, json
-# import rc4
+import requests, json, base64
 from .exceptions import InvalidLoginError, RequestFailedError
 from xml.etree import ElementTree
 
@@ -8,10 +7,10 @@ SCHEME = "http://"
 
 
 class client:
-    def __init__(self, username, enc_password, host):
+    def __init__(self, username, password, host):
         self.host = host
         self.username = username
-        self.enc_password = enc_password
+        self.password = password
         self.session = requests.Session()
         self.login()
 
@@ -23,7 +22,10 @@ class client:
             "Host": self.host,
             "Content-Length": str(content_length),
         }
-        data = RAW_LOGIN_STRING.format(username=self.username, enc_password=self.enc_password)
+
+        enc_password = base64.b64encode(self.password.encode('utf-8')).decode("utf-8")
+
+        data = RAW_LOGIN_STRING.format(username=self.username, enc_password=enc_password)
         response = self.session.post(url, data=data, headers=headers)
 
         if response.status_code == 200:
