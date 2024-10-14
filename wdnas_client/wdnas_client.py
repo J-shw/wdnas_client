@@ -105,3 +105,34 @@ class client:
                 raise RequestFailedError(response.status_code)
         else:
             raise RequestFailedError(response.status_code)
+    
+    def system_status(self):
+        url = f"{SCHEME}{self.host}/cgi-bin/status_mgr.cgi"
+        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
+        phpsessid = self.session.cookies['PHPSESSID']
+        headers = {
+            "Host": self.host,
+            "X-CSRF-Token": wd_csrf_token,
+            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};",
+            "Content-Length": str(1),
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        }
+
+        data = 'cmd=resource'
+        response = self.session.post(url, data=data, headers=headers)
+
+        if response.status_code == 200:
+            device_status = ElementTree.fromstring(response.content)
+            json_device_status = {"memory": {}, "cpu": None}
+
+            # cpu
+            json_device_status['cpu'] = int(device_status.find('.//cpu').text.strip('%'))
+
+            # Memory
+            json_device_status['memory']['total'] = int(device_status.find('.//mem_total').text)
+            json_device_status['memory']['unused'] = int(device_status.find('.//mem_free').text)
+            json_device_status['memory']['simple'] = device_status.find('.//mem2_total').text
+
+            return json_device_status
+        else:
+            raise RequestFailedError(response.status_code)
