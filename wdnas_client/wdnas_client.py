@@ -101,5 +101,7 @@ class client:
             json_content = json.loads(response.content)
             if json_content['success']:
                 return json_content['item']
+            else:
+                raise RequestFailedError(response.status_code)
         else:
             raise RequestFailedError(response.status_code)
