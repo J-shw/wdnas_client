@@ -10,6 +10,8 @@ My end goal with this is to link into Home Assistant so I can monitor my WD NAS
 
 First create the client with the username, password and the host (Be that hostname or IP address)
 
+__Admin account is requred!__
+
 Now call the functions to obtain wanted data - Thats it!
 
 ```
