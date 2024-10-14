@@ -58,12 +58,12 @@ class client:
                     "model":  disk.findtext('model'),
                     "rev":  disk.findtext('rev'),
                     "sn":  disk.findtext('sn'),
-                    "size":  disk.findtext('size'),
+                    "size":  int(disk.findtext('size')),
                     "failed":  bool(int(disk.findtext('failed'))),
                     "healthy":  bool(int(disk.findtext('healthy'))),
                     "removable":  bool(int(disk.findtext('removable'))),
                     "over_temp":  bool(int(disk.findtext('over_temp'))),
-                    "temp": disk.findtext('temp'),
+                    "temp": int(disk.findtext('temp')),
                     "sleep":  bool(int(disk.findtext('sleep')))
                 }
             
@@ -74,12 +74,12 @@ class client:
                     "encrypted":  bool(int(disk.findtext('encrypted'))),
                     "unlocked":  bool(int(disk.findtext('unlocked'))),
                     "mounted":  bool(int(disk.findtext('mounted'))),
-                    "size":  disk.findtext('size'),
+                    "size":  int(disk.findtext('size')),
                 }
             
-            device_info_json['volumes']['size']['total'] = device_info.find('.//total_size').text
-            device_info_json['volumes']['size']['used'] = device_info.find('.//total_used_size').text
-            device_info_json['volumes']['size']['unused'] = device_info.find('.//total_unused_size').text
+            device_info_json['volumes']['size']['total'] =int(device_info.find('.//total_size').text)
+            device_info_json['volumes']['size']['used'] = int(device_info.find('.//total_used_size').text)
+            device_info_json['volumes']['size']['unused'] = int(device_info.find('.//total_unused_size').text)
             
             return device_info_json
         else:
