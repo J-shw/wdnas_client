@@ -1,4 +1,4 @@
-import requests
+import requests, json
 # import rc4
 from .exceptions import InvalidLoginError, RequestFailedError
 from xml.etree import ElementTree
@@ -82,5 +82,26 @@ class client:
             device_info_json['volumes']['size']['unused'] = device_info.find('.//total_unused_size').text
             
             return device_info_json
+        else:
+            raise RequestFailedError(response.status_code)
+    
+    def share_names(self):
+        url = f"{SCHEME}{self.host}/web/get_share_name_list.php"
+        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
+        phpsessid = self.session.cookies['PHPSESSID']
+        headers = {
+            "Host": self.host,
+            "X-CSRF-Token": wd_csrf_token,
+            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};"
+        }
+
+        response = self.session.post(url, headers=headers)
+
+        if response.status_code == 200:
+            json_content = json.loads(response.content)
+            if json_content['success']:
+                return json_content['item']
+            else:
+                raise RequestFailedError(response.status_code)
         else:
             raise RequestFailedError(response.status_code)
