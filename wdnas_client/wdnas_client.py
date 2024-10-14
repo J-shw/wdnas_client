@@ -182,9 +182,13 @@ class client:
         if response.status_code == 200:
             latest_version = ElementTree.fromstring(response.content)
 
-            json_latest_version = {"new": None, "data": {}}
+            json_latest_version = {"new": None, "details": {}}
 
             json_latest_version['new'] = bool(int(latest_version.find('.//new').text))
+            
+            json_latest_version['details']['version'] = latest_version.find('.//version').text
+            json_latest_version['details']['path'] = latest_version.find('.//path').text
+            json_latest_version['details']['releasenote'] = latest_version.find('.//releasenote').text
 
             return json_latest_version
         else:
