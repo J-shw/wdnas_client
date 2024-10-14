@@ -212,15 +212,25 @@ class client:
             json_accounts = {"users": {}, "groups": {}}
 
             for user in accounts.iter('item'):
-                json_accounts['users'][user.findtext('uid')] = {
+                uid = user.findtext('uid')
+
+                if(user.findtext('pwd') != None):
+                    password_bool = bool(int(user.findtext('pwd')))
+                else: password_bool = False
+
+                last_name_list = []
+                for lastName in user.iter('last_name'):
+                    last_name_list.append(lastName.text)
+
+                json_accounts['users'][uid] = {
                     "name": user.findtext('name'),
                     "email": user.findtext('email'),
-                    "pwd": user.findtext('pwd'),
+                    "pwd": password_bool,
                     "gid": user.findtext('gid'),
                     "first_name": user.findtext('first_name'),
+                    "last_name": last_name_list,
                     "hint": user.findtext('hint'),
                 }
-
             
             for group in accounts.iter('item'):
                 gid = group.findtext('gid')
