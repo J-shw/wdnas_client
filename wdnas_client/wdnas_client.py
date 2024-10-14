@@ -193,3 +193,56 @@ class client:
             return json_latest_version
         else:
             raise RequestFailedError(response.status_code)
+    
+    def accounts(self):
+        url = f"{SCHEME}{self.host}/xml/account.xml"
+        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
+        phpsessid = self.session.cookies['PHPSESSID']
+        headers = {
+            "Host": self.host,
+            "X-CSRF-Token": wd_csrf_token,
+            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};",
+        }
+
+        response = self.session.post(url, headers=headers)
+
+        if response.status_code == 200:
+            accounts = ElementTree.fromstring(response.content)
+
+            json_accounts = {"users": {}, "groups": {}}
+
+            for user in accounts.iter('item'):
+                uid = user.findtext('uid')
+
+                if(user.findtext('pwd') != None):
+                    password_bool = bool(int(user.findtext('pwd')))
+                else: password_bool = False
+
+                last_name_list = []
+                for lastName in user.iter('last_name'):
+                    last_name_list.append(lastName.text)
+
+                json_accounts['users'][uid] = {
+                    "name": user.findtext('name'),
+                    "email": user.findtext('email'),
+                    "pwd": password_bool,
+                    "gid": user.findtext('gid'),
+                    "first_name": user.findtext('first_name'),
+                    "last_name": last_name_list,
+                    "hint": user.findtext('hint'),
+                }
+            
+            for group in accounts.iter('item'):
+                gid = group.findtext('gid')
+                json_accounts['groups'][gid] = {
+                    "name": group.findtext('name'),
+                    "user_cnt": user.findtext('user_cnt'),
+                }
+
+                json_accounts['groups'][gid]['users'] = []
+                for user in group.iter('users'):
+                    json_accounts['groups'][gid]['users'].append(user.findtext('user'))
+            
+            return json_accounts
+        else:
+            raise RequestFailedError(response.status_code)
