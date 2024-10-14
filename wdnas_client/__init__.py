@@ -1,5 +1,4 @@
 import requests, json, base64
-# import rc4
 from .exceptions import InvalidLoginError, RequestFailedError
 from xml.etree import ElementTree
 
@@ -24,10 +23,7 @@ class client:
             "Content-Length": str(content_length),
         }
 
-
         enc_password = base64.b64encode(self.password.encode('utf-8')).decode("utf-8")
-
-        print(enc_password)
 
         data = RAW_LOGIN_STRING.format(username=self.username, enc_password=enc_password)
         response = self.session.post(url, data=data, headers=headers)
