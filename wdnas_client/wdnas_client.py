@@ -1,4 +1,4 @@
-import requests
+import requests, json
 # import rc4
 from .exceptions import InvalidLoginError, RequestFailedError
 from xml.etree import ElementTree
@@ -95,9 +95,11 @@ class client:
             "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};"
         }
 
-        response = self.session.get(url, headers=headers)
+        response = self.session.post(url, headers=headers)
 
         if response.status_code == 200:
-            response.content
+            json_content = json.loads(response.content)
+            if json_content['success']:
+                return json_content['item']
         else:
             raise RequestFailedError(response.status_code)
