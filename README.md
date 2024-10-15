@@ -1,4 +1,4 @@
-# WD-NAS-Client
+# WDNAS-Client
 
 ## About
 This module allows users to connect to their local WD NAS and view system info (Storage capacity, Disk temp, volumes etc..)
@@ -34,7 +34,7 @@ print(wdNAS.latest_version())
 
 print(wdNAS.accounts())
 
-print(wdNAS.alerts)
+print(wdNAS.alerts())
 ```
 
 ## Important Info
