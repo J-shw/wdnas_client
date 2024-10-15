@@ -1,4 +1,4 @@
-# WD-NAS-Client
+# WDNAS-Client
 
 ## About
 This module allows users to connect to their local WD NAS and view system info (Storage capacity, Disk temp, volumes etc..)
@@ -15,7 +15,7 @@ __Admin account is requred!__
 Now call the functions to obtain wanted data - Thats it!
 
 ```
-from wdnas_client import client
+from wdnas-client import client
 
 username = input("Username: ").lower()
 password = input("Password: ")
