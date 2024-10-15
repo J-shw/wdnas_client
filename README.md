@@ -15,7 +15,7 @@ __Admin account is requred!__
 Now call the functions to obtain wanted data - Thats it!
 
 ```
-from wdnas-client import client
+from wdnas_client import client
 
 username = input("Username: ").lower()
 password = input("Password: ")
