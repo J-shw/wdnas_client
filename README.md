@@ -34,7 +34,7 @@ print(wdNAS.latest_version())
 
 print(wdNAS.accounts())
 
-print(wdNAS.alerts)
+print(wdNAS.alerts())
 ```
 
 ## Important Info
