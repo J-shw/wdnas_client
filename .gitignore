@@ -2,3 +2,6 @@
 /JS test
 *.pyc
 test.py
+/build
+/dist
+/wdnas_client.egg-info
