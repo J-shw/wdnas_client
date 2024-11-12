@@ -28,6 +28,8 @@ print(wdNAS.share_names())
 
 print(wdNAS.system_status())
 
+print(wdNAS.device_info())
+
 print(wdNAS.system_version())
 
 print(wdNAS.latest_version())
