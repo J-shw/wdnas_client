@@ -139,6 +139,44 @@ class client:
         else:
             raise RequestFailedError(response.status_code)
     
+    def network_info(self):
+        url = f"{SCHEME}{self.host}/cgi-bin/network_mgr.cgi?cmd=cgi_get_lan_xml"
+        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
+        phpsessid = self.session.cookies['PHPSESSID']
+        headers = {
+            "Host": self.host,
+            "X-CSRF-Token": wd_csrf_token,
+            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};",
+        }
+
+        response = self.session.get(url, headers=headers)
+
+        if response.status_code == 200:
+            network_info = ElementTree.fromstring(response.content)
+
+            json_network_info = {}
+            for lan in network_info.iter('lan'):
+                mac = lan.findtext('mac') 
+
+                if mac != 'No found.':
+                    json_network_info[mac] = {
+                        "speed": lan.findtext('speed'),
+                        "dhcp_enable": bool(int(lan.findtext('dhcp_enable'))),
+                        "dns_manual": bool(int(lan.findtext('dns_manual'))),
+                        "ip": lan.findtext('ip'),
+                        "netmask": lan.findtext('netmask'),
+                        "gateway": lan.findtext('gateway'),
+                        "lan_speed": lan.findtext('lan_speed'),
+                        "lan_enabled": bool(int(lan.findtext('lan_status'))),
+                        "dns1": lan.findtext('dns1'),
+                        "dns2": lan.findtext('dns2'),
+                        "dns3": lan.findtext('dns3')
+                    }
+
+            return json_network_info
+        else:
+            raise RequestFailedError(response.status_code)
+    
     def device_info(self):
         url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
         wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
