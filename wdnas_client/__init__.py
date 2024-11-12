@@ -9,7 +9,7 @@ SCHEME = "http://"
 class client:
     def __init__(self, username, password, host):
         self.host = host
-        self.username = username
+        self.username = username.lower()
         self.password = password
         self.session = requests.Session()
         self.login()
