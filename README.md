@@ -17,7 +17,7 @@ Now call the functions to obtain wanted data - Thats it!
 ```
 from wdnas_client import client
 
-username = input("Username: ").lower()
+username = input("Username: ")
 password = input("Password: ")
 
 wdNAS = client(username, password, 'wdmycloudmirror.local')
@@ -27,6 +27,10 @@ print(wdNAS.system_info())
 print(wdNAS.share_names())
 
 print(wdNAS.system_status())
+
+print(wdNAS.network_info())
+
+print(wdNAS.device_info())
 
 print(wdNAS.system_version())
 
