@@ -15,30 +15,27 @@ __Admin account is requred!__
 Now call the functions to obtain wanted data - Thats it!
 
 ```
+import asyncio
 from wdnas_client import client
 
-username = input("Username: ")
-password = input("Password: ")
+async def main():
+    username = input("Username: ").lower()
+    password = input("Password: ")
+    host = '192.168.86.41'
+    
+    async with client(username, password, host) as wdNAS:
+        print("System Info:", await wdNAS.system_info())
+        print("Share Names:", await wdNAS.share_names())
+        print("System Status:", await wdNAS.system_status())
+        print("Network Info:", await wdNAS.network_info())
+        print("Device Info:", await wdNAS.device_info())
+        print("System Version:", await wdNAS.system_version())
+        print("Latest Version:", await wdNAS.latest_version())
+        print("Accounts:", await wdNAS.accounts())
+        print("Alerts:", await wdNAS.alerts())
 
-wdNAS = client(username, password, 'wdmycloudmirror.local')
-
-print(wdNAS.system_info())
-
-print(wdNAS.share_names())
-
-print(wdNAS.system_status())
-
-print(wdNAS.network_info())
-
-print(wdNAS.device_info())
-
-print(wdNAS.system_version())
-
-print(wdNAS.latest_version())
-
-print(wdNAS.accounts())
-
-print(wdNAS.alerts())
+if __name__ == "__main__":
+    asyncio.run(main())
 ```
 
 ## Important Info
