@@ -269,37 +269,28 @@ class client:
             else:
                 raise RequestFailedError(response.status)
     
-            
-    def alerts(self):
+    async def alerts(self):
         url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
-        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
-        phpsessid = self.session.cookies['PHPSESSID']
+        data = 'cmd=cgi_get_alert'
         headers = {
             "Host": self.host,
-            "X-CSRF-Token": wd_csrf_token,
-            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};",
-            "Content-Length": str(1),
+            "X-CSRF-Token": self.wd_csrf_token,
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         }
-
-        data = 'cmd=cgi_get_alert'
-        response = self.session.post(url, data=data, headers=headers)
-
-        if response.status_code == 200:
-            alerts = ElementTree.fromstring(response.content)
-
-            json_alerts = []
-
-            for user in alerts.iter('alerts'):
-                json_alerts.append ({
-                    "code": user.findtext('code'),
-                    "seq_num": user.findtext('seq_num'),
-                    "level": user.findtext('level'),
-                    "msg": user.findtext('msg'),
-                    "desc": user.findtext('desc'),
-                    "time": user.findtext('time'),
-                })
-
-            return json_alerts
-        else:
-            raise RequestFailedError(response.status_code)
+        async with self.session.post(url, data=data, headers=headers) as response:
+            if response.status == 200:
+                content = await response.text()
+                alerts = ElementTree.fromstring(content)
+                json_alerts = []
+                for user in alerts.iter('alerts'):
+                    json_alerts.append ({
+                        "code": user.findtext('code'),
+                        "seq_num": user.findtext('seq_num'),
+                        "level": user.findtext('level'),
+                        "msg": user.findtext('msg'),
+                        "desc": user.findtext('desc'),
+                        "time": user.findtext('time'),
+                    })
+                return json_alerts
+            else:
+                raise RequestFailedError(response.status)
