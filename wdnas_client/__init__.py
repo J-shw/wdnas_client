@@ -1,6 +1,7 @@
 import aiohttp, json, base64
 from .exceptions import InvalidLoginError, RequestFailedError
 from xml.etree import ElementTree
+import http.cookies
 
 RAW_LOGIN_STRING = 'cmd=wd_login&username={username}&pwd={enc_password}'
 SCHEME = "http://"
@@ -12,6 +13,8 @@ class client:
         self.username = username.lower()
         self.password = password
         self.session = None
+        self.phpsessid = None
+        self.wd_csrf_token = None
     
     async def __aenter__(self):
         self.session = aiohttp.ClientSession()
@@ -23,77 +26,75 @@ class client:
         
     async def login(self):
         url = f"{SCHEME}{self.host}/cgi-bin/login_mgr.cgi"
-        content_length = 1
         headers = {
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "Host": self.host,
-            "Content-Length": str(content_length),
         }
 
         enc_password = base64.b64encode(self.password.encode('utf-8')).decode("utf-8")
 
         data = RAW_LOGIN_STRING.format(username=self.username, enc_password=enc_password)
 
-        async with self.session.post(url, data=data.encode('utf-8'), headers=headers) as response:
+        async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
+
+                set_cookies = response.headers.getall('Set-Cookie', [])
+                for cookie_str in set_cookies:
+                    cookie = http.cookies.SimpleCookie(cookie_str)
+                    for key, morsel in cookie.items():
+                        self.session.cookie_jar.update_cookies({key: morsel.value})
+
                 cookies = response.cookies
                 if "PHPSESSID" in cookies and "WD-CSRF-TOKEN" in cookies:
-                    pass
+                    self.phpsessid = cookies["PHPSESSID"].value
+                    self.wd_csrf_token = cookies["WD-CSRF-TOKEN"].value
                 else:
                     raise InvalidLoginError("Invalid Username/Password or missing cookies")
             else:
                 raise RequestFailedError(response.status)
-        
-    def system_info(self):
+    
+    async def system_info(self):
         url = f"{SCHEME}{self.host}/xml/sysinfo.xml"
-        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
-        phpsessid = self.session.cookies['PHPSESSID']
         headers = {
             "Host": self.host,
-            "X-CSRF-Token": wd_csrf_token,
-            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};"
+            "X-CSRF-Token": self.wd_csrf_token,
         }
-
-        response = self.session.get(url, headers=headers)
-
-        if response.status_code == 200:
-            device_info = ElementTree.fromstring(response.content)
-            device_info_json = {"disks": {}, "volumes": {"size":{}}}
-
-            for disk in device_info.iter('disk'):
-                device_info_json['disks'][disk.attrib['id']] = {
-                    "name":  disk.findtext('name'),
-                    "connected":  bool(int(disk.findtext('connected'))),
-                    "vendor":  disk.findtext('vendor'),
-                    "model":  disk.findtext('model'),
-                    "rev":  disk.findtext('rev'),
-                    "sn":  disk.findtext('sn'),
-                    "size":  int(disk.findtext('size')),
-                    "failed":  bool(int(disk.findtext('failed'))),
-                    "healthy":  bool(int(disk.findtext('healthy'))),
-                    "removable":  bool(int(disk.findtext('removable'))),
-                    "over_temp":  bool(int(disk.findtext('over_temp'))),
-                    "temp": int(disk.findtext('temp')),
-                    "sleep":  bool(int(disk.findtext('sleep')))
-                }
-            
-            for disk in device_info.iter('vol'):
-                device_info_json['volumes'][disk.attrib['id']] = {
-                    "name":  disk.findtext('name'),
-                    "label":  disk.findtext('label'),
-                    "encrypted":  bool(int(disk.findtext('encrypted'))),
-                    "unlocked":  bool(int(disk.findtext('unlocked'))),
-                    "mounted":  bool(int(disk.findtext('mounted'))),
-                    "size":  int(disk.findtext('size')),
-                }
-            
-            device_info_json['volumes']['size']['total'] =int(device_info.find('.//total_size').text)
-            device_info_json['volumes']['size']['used'] = int(device_info.find('.//total_used_size').text)
-            device_info_json['volumes']['size']['unused'] = int(device_info.find('.//total_unused_size').text)
-            
-            return device_info_json
-        else:
-            raise RequestFailedError(response.status_code)
+        async with self.session.get(url, headers=headers) as response:
+            if response.status == 200:
+                content = await response.text()
+                device_info = ElementTree.fromstring(content)
+                device_info_json = {"disks": {}, "volumes": {"size":{}}}
+                for disk in device_info.iter('disk'):
+                    device_info_json['disks'][disk.attrib['id']] = {
+                        "name":  disk.findtext('name'),
+                        "connected":  bool(int(disk.findtext('connected'))),
+                        "vendor":  disk.findtext('vendor'),
+                        "model":  disk.findtext('model'),
+                        "rev":  disk.findtext('rev'),
+                        "sn":  disk.findtext('sn'),
+                        "size":  int(disk.findtext('size')),
+                        "failed":  bool(int(disk.findtext('failed'))),
+                        "healthy":  bool(int(disk.findtext('healthy'))),
+                        "removable":  bool(int(disk.findtext('removable'))),
+                        "over_temp":  bool(int(disk.findtext('over_temp'))),
+                        "temp": int(disk.findtext('temp')),
+                        "sleep":  bool(int(disk.findtext('sleep')))
+                    }
+                for disk in device_info.iter('vol'):
+                    device_info_json['volumes'][disk.attrib['id']] = {
+                        "name":  disk.findtext('name'),
+                        "label":  disk.findtext('label'),
+                        "encrypted":  bool(int(disk.findtext('encrypted'))),
+                        "unlocked":  bool(int(disk.findtext('unlocked'))),
+                        "mounted":  bool(int(disk.findtext('mounted'))),
+                        "size":  int(disk.findtext('size')),
+                    }
+                device_info_json['volumes']['size']['total'] =int(device_info.find('.//total_size').text)
+                device_info_json['volumes']['size']['used'] = int(device_info.find('.//total_used_size').text)
+                device_info_json['volumes']['size']['unused'] = int(device_info.find('.//total_unused_size').text)
+                return device_info_json
+            else:
+                raise RequestFailedError(response.status)
     
     def share_names(self):
         url = f"{SCHEME}{self.host}/web/get_share_name_list.php"
