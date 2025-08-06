@@ -20,8 +20,8 @@ class client:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.session.close()
-
-    def login(self):
+        
+    async def login(self):
         url = f"{SCHEME}{self.host}/cgi-bin/login_mgr.cgi"
         content_length = 1
         headers = {
@@ -33,15 +33,16 @@ class client:
         enc_password = base64.b64encode(self.password.encode('utf-8')).decode("utf-8")
 
         data = RAW_LOGIN_STRING.format(username=self.username, enc_password=enc_password)
-        response = self.session.post(url, data=data, headers=headers)
 
-        if response.status_code == 200:
-            if "PHPSESSID" in response.cookies and "WD-CSRF-TOKEN" in response.cookies:
-                print("Login successful!")
+        async with self.session.post(url, data=data.encode('utf-8'), headers=headers) as response:
+            if response.status == 200:
+                cookies = response.cookies
+                if "PHPSESSID" in cookies and "WD-CSRF-TOKEN" in cookies:
+                    pass
+                else:
+                    raise InvalidLoginError("Invalid Username/Password or missing cookies")
             else:
-                raise InvalidLoginError("Invalid Username/Password or missing cookies")
-        else:
-            raise RequestFailedError(response.status_code)
+                raise RequestFailedError(response.status)
         
     def system_info(self):
         url = f"{SCHEME}{self.host}/xml/sysinfo.xml"
