@@ -166,35 +166,27 @@ class client:
                 return json_network_info
             else:
                 raise RequestFailedError(response.status)
-            
-    def device_info(self):
+
+    async def device_info(self):
         url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
-        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
-        phpsessid = self.session.cookies['PHPSESSID']
+        data = 'cmd=cgi_get_device_info'
         headers = {
             "Host": self.host,
-            "X-CSRF-Token": wd_csrf_token,
-            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};",
-            "Content-Length": str(1),
+            "X-CSRF-Token": self.wd_csrf_token,
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         }
-
-        data = 'cmd=cgi_get_device_info'
-        response = self.session.post(url, data=data, headers=headers)
-
-        if response.status_code == 200:
-            device_info = ElementTree.fromstring(response.content)
-
-            json_device_info = {"serial_number": None, "name": None, "description": None}
-
-            json_device_info['serial_number'] = device_info.find('.//serial_number').text
-            json_device_info['name'] = device_info.find('.//name').text
-            json_device_info['description'] = device_info.find('.//description').text
-
-            return json_device_info
-        else:
-            raise RequestFailedError(response.status_code)
-
+        async with self.session.post(url, data=data, headers=headers) as response:
+            if response.status == 200:
+                content = await response.text()
+                device_info = ElementTree.fromstring(content)
+                json_device_info = {"serial_number": None, "name": None, "description": None}
+                json_device_info['serial_number'] = device_info.find('.//serial_number').text
+                json_device_info['name'] = device_info.find('.//name').text
+                json_device_info['description'] = device_info.find('.//description').text
+                return json_device_info
+            else:
+                raise RequestFailedError(response.status)
+               
     def system_version(self):
         url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
         wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
