@@ -114,75 +114,59 @@ class client:
             else:
                 raise RequestFailedError(response.status)
     
-    def system_status(self):
+    async def system_status(self):
         url = f"{SCHEME}{self.host}/cgi-bin/status_mgr.cgi"
-        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
-        phpsessid = self.session.cookies['PHPSESSID']
+        data = 'cmd=resource'
         headers = {
             "Host": self.host,
-            "X-CSRF-Token": wd_csrf_token,
-            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};",
-            "Content-Length": str(1),
+            "X-CSRF-Token": self.wd_csrf_token,
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         }
-
-        data = 'cmd=resource'
-        response = self.session.post(url, data=data, headers=headers)
-
-        if response.status_code == 200:
-            device_status = ElementTree.fromstring(response.content)
-            json_device_status = {"memory": {}, "cpu": None}
-
-            # cpu
-            json_device_status['cpu'] = int(device_status.find('.//cpu').text.strip('%'))
-
-            # Memory
-            json_device_status['memory']['total'] = int(device_status.find('.//mem_total').text)
-            json_device_status['memory']['unused'] = int(device_status.find('.//mem_free').text)
-            json_device_status['memory']['simple'] = device_status.find('.//mem2_total').text
-
-            return json_device_status
-        else:
-            raise RequestFailedError(response.status_code)
+        async with self.session.post(url, data=data, headers=headers) as response:
+            if response.status == 200:
+                content = await response.text()
+                device_status = ElementTree.fromstring(content)
+                json_device_status = {"memory": {}, "cpu": None}
+                json_device_status['cpu'] = int(device_status.find('.//cpu').text.strip('%'))
+                json_device_status['memory']['total'] = int(device_status.find('.//mem_total').text)
+                json_device_status['memory']['unused'] = int(device_status.find('.//mem_free').text)
+                json_device_status['memory']['simple'] = device_status.find('.//mem2_total').text
+                return json_device_status
+            else:
+                raise RequestFailedError(response.status)
     
-    def network_info(self):
+    async def network_info(self):
         url = f"{SCHEME}{self.host}/cgi-bin/network_mgr.cgi?cmd=cgi_get_lan_xml"
-        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
-        phpsessid = self.session.cookies['PHPSESSID']
         headers = {
             "Host": self.host,
-            "X-CSRF-Token": wd_csrf_token,
-            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};",
+            "X-CSRF-Token": self.wd_csrf_token,
         }
 
-        response = self.session.get(url, headers=headers)
-
-        if response.status_code == 200:
-            network_info = ElementTree.fromstring(response.content)
-
-            json_network_info = {}
-            for lan in network_info.iter('lan'):
-                mac = lan.findtext('mac') 
-
-                if mac != 'No found.':
-                    json_network_info[mac] = {
-                        "speed": lan.findtext('speed'),
-                        "dhcp_enable": bool(int(lan.findtext('dhcp_enable'))),
-                        "dns_manual": bool(int(lan.findtext('dns_manual'))),
-                        "ip": lan.findtext('ip'),
-                        "netmask": lan.findtext('netmask'),
-                        "gateway": lan.findtext('gateway'),
-                        "lan_speed": lan.findtext('lan_speed'),
-                        "lan_enabled": bool(int(lan.findtext('lan_status'))),
-                        "dns1": lan.findtext('dns1'),
-                        "dns2": lan.findtext('dns2'),
-                        "dns3": lan.findtext('dns3')
-                    }
-
-            return json_network_info
-        else:
-            raise RequestFailedError(response.status_code)
-    
+        async with self.session.get(url, headers=headers) as response:
+            if response.status == 200:
+                content = await response.text()
+                network_info = ElementTree.fromstring(content)
+                json_network_info = {}
+                for lan in network_info.iter('lan'):
+                    mac = lan.findtext('mac')
+                    if mac != 'No found.':
+                        json_network_info[mac] = {
+                            "speed": lan.findtext('speed'),
+                            "dhcp_enable": bool(int(lan.findtext('dhcp_enable'))),
+                            "dns_manual": bool(int(lan.findtext('dns_manual'))),
+                            "ip": lan.findtext('ip'),
+                            "netmask": lan.findtext('netmask'),
+                            "gateway": lan.findtext('gateway'),
+                            "lan_speed": lan.findtext('lan_speed'),
+                            "lan_enabled": bool(int(lan.findtext('lan_status'))),
+                            "dns1": lan.findtext('dns1'),
+                            "dns2": lan.findtext('dns2'),
+                            "dns3": lan.findtext('dns3')
+                        }
+                return json_network_info
+            else:
+                raise RequestFailedError(response.status)
+            
     def device_info(self):
         url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
         wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
