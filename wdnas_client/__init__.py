@@ -1,4 +1,4 @@
-import requests, json, base64
+import aiohttp, json, base64
 from .exceptions import InvalidLoginError, RequestFailedError
 from xml.etree import ElementTree
 
@@ -11,8 +11,15 @@ class client:
         self.host = host
         self.username = username.lower()
         self.password = password
-        self.session = requests.Session()
-        self.login()
+        self.session = None
+    
+    async def __aenter__(self):
+        self.session = aiohttp.ClientSession()
+        await self.login()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.session.close()
 
     def login(self):
         url = f"{SCHEME}{self.host}/cgi-bin/login_mgr.cgi"
