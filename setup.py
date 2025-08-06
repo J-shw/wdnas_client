@@ -5,10 +5,10 @@ with open('README.md', 'r') as f:
 
 setup(
     name='wdnas_client',
-    version='0.7.0',
+    version='0.8.0',
     packages=find_packages(),
     install_requires=[
-        'requests>=2.32.3'
+        'aiohttp>=3.12.15'
     ],
     long_description=desc,
     long_description_content_type='text/markdown'
