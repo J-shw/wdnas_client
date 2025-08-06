@@ -186,117 +186,90 @@ class client:
                 return json_device_info
             else:
                 raise RequestFailedError(response.status)
-               
-    def system_version(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
-        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
-        phpsessid = self.session.cookies['PHPSESSID']
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": wd_csrf_token,
-            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};",
-            "Content-Length": str(1),
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        }
 
+    async def system_version(self):
+        url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
         data = 'cmd=get_firm_v_xml'
-        response = self.session.post(url, data=data, headers=headers)
-
-        if response.status_code == 200:
-            device_version = ElementTree.fromstring(response.content)
-
-            json_device_version = {"firmware": None, "oled": None}
-
-            json_device_version['firmware'] = device_version.find('.//fw').text
-            json_device_version['oled'] = device_version.find('.//oled').text.strip('\n')
-
-            return json_device_version
-        else:
-            raise RequestFailedError(response.status_code)
-    
-    def latest_version(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
-        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
-        phpsessid = self.session.cookies['PHPSESSID']
         headers = {
             "Host": self.host,
-            "X-CSRF-Token": wd_csrf_token,
-            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};",
-            "Content-Length": str(1),
+            "X-CSRF-Token": self.wd_csrf_token,
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         }
-
+        async with self.session.post(url, data=data, headers=headers) as response:
+            if response.status == 200:
+                content = await response.text()
+                device_version = ElementTree.fromstring(content)
+                json_device_version = {"firmware": None, "oled": None}
+                json_device_version['firmware'] = device_version.find('.//fw').text
+                json_device_version['oled'] = device_version.find('.//oled').text.strip('\n')
+                return json_device_version
+            else:
+                raise RequestFailedError(response.status)
+                     
+    async def latest_version(self):
+        url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
         data = 'cmd=get_auto_fw_version'
-        response = self.session.post(url, data=data, headers=headers)
-
-        if response.status_code == 200:
-            latest_version = ElementTree.fromstring(response.content)
-
-            json_latest_version = {"new": None, "details": {}}
-
-            json_latest_version['new'] = bool(int(latest_version.find('.//new').text))
-            
-            json_latest_version['details']['version'] = latest_version.find('.//version').text
-            json_latest_version['details']['path'] = latest_version.find('.//path').text
-            json_latest_version['details']['releasenote'] = latest_version.find('.//releasenote').text
-
-            return json_latest_version
-        else:
-            raise RequestFailedError(response.status_code)
-    
-    def accounts(self):
-        url = f"{SCHEME}{self.host}/xml/account.xml"
-        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
-        phpsessid = self.session.cookies['PHPSESSID']
         headers = {
             "Host": self.host,
-            "X-CSRF-Token": wd_csrf_token,
-            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};",
+            "X-CSRF-Token": self.wd_csrf_token,
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         }
-
-        response = self.session.post(url, headers=headers)
-
-        if response.status_code == 200:
-            accounts = ElementTree.fromstring(response.content)
-
-            json_accounts = {"users": {}, "groups": {}}
-
-            for user in accounts.iter('item'):
-                uid = user.findtext('uid')
-
-                if(user.findtext('pwd') != None):
-                    password_bool = bool(int(user.findtext('pwd')))
-                else: password_bool = False
-
-                last_name_list = []
-                for lastName in user.iter('last_name'):
-                    last_name_list.append(lastName.text)
-
-                json_accounts['users'][uid] = {
-                    "name": user.findtext('name'),
-                    "email": user.findtext('email'),
-                    "pwd": password_bool,
-                    "gid": user.findtext('gid'),
-                    "first_name": user.findtext('first_name'),
-                    "last_name": last_name_list,
-                    "hint": user.findtext('hint'),
-                }
-            
-            for group in accounts.iter('item'):
-                gid = group.findtext('gid')
-                json_accounts['groups'][gid] = {
-                    "name": group.findtext('name'),
-                    "user_cnt": user.findtext('user_cnt'),
-                }
-
-                json_accounts['groups'][gid]['users'] = []
-                for user in group.iter('users'):
-                    json_accounts['groups'][gid]['users'].append(user.findtext('user'))
-            
-            return json_accounts
-        else:
-            raise RequestFailedError(response.status_code)
+        async with self.session.post(url, data=data, headers=headers) as response:
+            if response.status == 200:
+                content = await response.text()
+                latest_version = ElementTree.fromstring(content)
+                json_latest_version = {"new": None, "details": {}}
+                json_latest_version['new'] = bool(int(latest_version.find('.//new').text))
+                json_latest_version['details']['version'] = latest_version.find('.//version').text
+                json_latest_version['details']['path'] = latest_version.find('.//path').text
+                json_latest_version['details']['releasenote'] = latest_version.find('.//releasenote').text
+                return json_latest_version
+            else:
+                raise RequestFailedError(response.status)
     
+    async def accounts(self):
+        url = f"{SCHEME}{self.host}/xml/account.xml"
+        headers = {
+            "Host": self.host,
+            "X-CSRF-Token": self.wd_csrf_token,
+        }
+        async with self.session.post(url, headers=headers) as response:
+            if response.status == 200:
+                content = await response.text()
+                accounts = ElementTree.fromstring(content)
+                json_accounts = {"users": {}, "groups": {}}
+                for user in accounts.iter('item'):
+                    uid = user.findtext('uid')
+                    if user.findtext('pwd') is not None:
+                        password_bool = bool(int(user.findtext('pwd')))
+                    else:
+                        password_bool = False
+                    last_name_list = []
+                    for lastName in user.iter('last_name'):
+                        last_name_list.append(lastName.text)
+                    json_accounts['users'][uid] = {
+                        "name": user.findtext('name'),
+                        "email": user.findtext('email'),
+                        "pwd": password_bool,
+                        "gid": user.findtext('gid'),
+                        "first_name": user.findtext('first_name'),
+                        "last_name": last_name_list,
+                        "hint": user.findtext('hint'),
+                    }
+                for group in accounts.iter('item'):
+                    gid = group.findtext('gid')
+                    json_accounts['groups'][gid] = {
+                        "name": group.findtext('name'),
+                        "user_cnt": user.findtext('user_cnt'),
+                    }
+                    json_accounts['groups'][gid]['users'] = []
+                    for user in group.iter('users'):
+                        json_accounts['groups'][gid]['users'].append(user.findtext('user'))
+                return json_accounts
+            else:
+                raise RequestFailedError(response.status)
+    
+            
     def alerts(self):
         url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
         wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
