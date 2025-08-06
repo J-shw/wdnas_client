@@ -96,26 +96,23 @@ class client:
             else:
                 raise RequestFailedError(response.status)
     
-    def share_names(self):
+    async def share_names(self):
         url = f"{SCHEME}{self.host}/web/get_share_name_list.php"
-        wd_csrf_token = self.session.cookies['WD-CSRF-TOKEN']
-        phpsessid = self.session.cookies['PHPSESSID']
+
         headers = {
             "Host": self.host,
-            "X-CSRF-Token": wd_csrf_token,
-            "Cookie": f"PHPSESSID={phpsessid}; WD-CSRF-TOKEN={wd_csrf_token};"
+            "X-CSRF-Token": self.wd_csrf_token,
         }
-
-        response = self.session.post(url, headers=headers)
-
-        if response.status_code == 200:
-            json_content = json.loads(response.content)
-            if json_content['success']:
-                return json_content['item']
+        async with self.session.post(url, headers=headers) as response:
+            if response.status == 200:
+                content = await response.text()
+                json_content = json.loads(content)
+                if json_content['success']:
+                    return json_content['item']
+                else:
+                    raise RequestFailedError(response.status)
             else:
-                raise RequestFailedError(response.status_code)
-        else:
-            raise RequestFailedError(response.status_code)
+                raise RequestFailedError(response.status)
     
     def system_status(self):
         url = f"{SCHEME}{self.host}/cgi-bin/status_mgr.cgi"
