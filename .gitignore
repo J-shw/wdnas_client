@@ -6,3 +6,4 @@ test.py
 /dist
 /wdnas_client.egg-info
 build.txt
+test.json
