@@ -63,9 +63,10 @@ class client:
             if response.status == 200:
                 content = await response.text()
                 device_info = ElementTree.fromstring(content)
-                device_info_json = {"disks": {}, "volumes": {"size":{}}}
+                device_info_json = {"disks": [], "volumes": [], "size": {}}
                 for disk in device_info.iter('disk'):
-                    device_info_json['disks'][disk.attrib['id']] = {
+                    device_info_json['disks'].append({
+                        "id": disk.attrib['id'],
                         "name":  disk.findtext('name'),
                         "connected":  bool(int(disk.findtext('connected'))),
                         "vendor":  disk.findtext('vendor'),
@@ -79,19 +80,20 @@ class client:
                         "over_temp":  bool(int(disk.findtext('over_temp'))),
                         "temp": int(disk.findtext('temp')),
                         "sleep":  bool(int(disk.findtext('sleep')))
-                    }
+                    })
                 for disk in device_info.iter('vol'):
-                    device_info_json['volumes'][disk.attrib['id']] = {
+                    device_info_json['volumes'].append({
+                        "id": disk.attrib['id'],
                         "name":  disk.findtext('name'),
                         "label":  disk.findtext('label'),
                         "encrypted":  bool(int(disk.findtext('encrypted'))),
                         "unlocked":  bool(int(disk.findtext('unlocked'))),
                         "mounted":  bool(int(disk.findtext('mounted'))),
                         "size":  int(disk.findtext('size')),
-                    }
-                device_info_json['volumes']['size']['total'] =int(device_info.find('.//total_size').text)
-                device_info_json['volumes']['size']['used'] = int(device_info.find('.//total_used_size').text)
-                device_info_json['volumes']['size']['unused'] = int(device_info.find('.//total_unused_size').text)
+                    })
+                device_info_json['size']['total'] =int(device_info.find('.//total_size').text)
+                device_info_json['size']['used'] = int(device_info.find('.//total_used_size').text)
+                device_info_json['size']['unused'] = int(device_info.find('.//total_unused_size').text)
                 return device_info_json
             else:
                 raise RequestFailedError(response.status)
@@ -237,7 +239,7 @@ class client:
             if response.status == 200:
                 content = await response.text()
                 accounts = ElementTree.fromstring(content)
-                json_accounts = {"users": {}, "groups": {}}
+                json_accounts = {"users": [], "groups": {}}
                 for user in accounts.iter('item'):
                     uid = user.findtext('uid')
                     if user.findtext('pwd') is not None:
@@ -247,7 +249,8 @@ class client:
                     last_name_list = []
                     for lastName in user.iter('last_name'):
                         last_name_list.append(lastName.text)
-                    json_accounts['users'][uid] = {
+                    json_accounts['users'].append({
+                        "uid": uid,
                         "name": user.findtext('name'),
                         "email": user.findtext('email'),
                         "pwd": password_bool,
@@ -255,7 +258,7 @@ class client:
                         "first_name": user.findtext('first_name'),
                         "last_name": last_name_list,
                         "hint": user.findtext('hint'),
-                    }
+                    })
                 for group in accounts.iter('item'):
                     gid = group.findtext('gid')
                     json_accounts['groups'][gid] = {
