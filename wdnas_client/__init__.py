@@ -63,9 +63,10 @@ class client:
             if response.status == 200:
                 content = await response.text()
                 device_info = ElementTree.fromstring(content)
-                device_info_json = {"disks": {}, "volumes": {"size":{}}}
+                device_info_json = {"disks": [], "volumes": [], "size": {}}
                 for disk in device_info.iter('disk'):
-                    device_info_json['disks'][disk.attrib['id']] = {
+                    device_info_json['disks'].append({
+                        "id": disk.attrib['id'],
                         "name":  disk.findtext('name'),
                         "connected":  bool(int(disk.findtext('connected'))),
                         "vendor":  disk.findtext('vendor'),
@@ -79,19 +80,20 @@ class client:
                         "over_temp":  bool(int(disk.findtext('over_temp'))),
                         "temp": int(disk.findtext('temp')),
                         "sleep":  bool(int(disk.findtext('sleep')))
-                    }
+                    })
                 for disk in device_info.iter('vol'):
-                    device_info_json['volumes'][disk.attrib['id']] = {
+                    device_info_json['volumes'].append({
+                        "id": disk.attrib['id'],
                         "name":  disk.findtext('name'),
                         "label":  disk.findtext('label'),
                         "encrypted":  bool(int(disk.findtext('encrypted'))),
                         "unlocked":  bool(int(disk.findtext('unlocked'))),
                         "mounted":  bool(int(disk.findtext('mounted'))),
                         "size":  int(disk.findtext('size')),
-                    }
-                device_info_json['volumes']['size']['total'] =int(device_info.find('.//total_size').text)
-                device_info_json['volumes']['size']['used'] = int(device_info.find('.//total_used_size').text)
-                device_info_json['volumes']['size']['unused'] = int(device_info.find('.//total_unused_size').text)
+                    })
+                device_info_json['size']['total'] =int(device_info.find('.//total_size').text)
+                device_info_json['size']['used'] = int(device_info.find('.//total_used_size').text)
+                device_info_json['size']['unused'] = int(device_info.find('.//total_unused_size').text)
                 return device_info_json
             else:
                 raise RequestFailedError(response.status)
