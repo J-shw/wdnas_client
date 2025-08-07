@@ -239,7 +239,7 @@ class client:
             if response.status == 200:
                 content = await response.text()
                 accounts = ElementTree.fromstring(content)
-                json_accounts = {"users": {}, "groups": {}}
+                json_accounts = {"users": [], "groups": []}
                 for user in accounts.iter('item'):
                     uid = user.findtext('uid')
                     if user.findtext('pwd') is not None:
@@ -249,7 +249,8 @@ class client:
                     last_name_list = []
                     for lastName in user.iter('last_name'):
                         last_name_list.append(lastName.text)
-                    json_accounts['users'][uid] = {
+                    json_accounts['users'].append({
+                        "uid": uid,
                         "name": user.findtext('name'),
                         "email": user.findtext('email'),
                         "pwd": password_bool,
@@ -257,7 +258,7 @@ class client:
                         "first_name": user.findtext('first_name'),
                         "last_name": last_name_list,
                         "hint": user.findtext('hint'),
-                    }
+                    })
                 for group in accounts.iter('item'):
                     gid = group.findtext('gid')
                     json_accounts['groups'][gid] = {
