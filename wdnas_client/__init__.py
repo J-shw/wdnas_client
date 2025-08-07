@@ -239,7 +239,7 @@ class client:
             if response.status == 200:
                 content = await response.text()
                 accounts = ElementTree.fromstring(content)
-                json_accounts = {"users": [], "groups": []}
+                json_accounts = {"users": [], "groups": {}}
                 for user in accounts.iter('item'):
                     uid = user.findtext('uid')
                     if user.findtext('pwd') is not None:
