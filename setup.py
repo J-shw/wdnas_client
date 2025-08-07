@@ -8,7 +8,7 @@ setup(
     version='0.8.1',
     packages=find_packages(),
     install_requires=[
-        'aiohttp>=3.12.15'
+        'aiohttp>=3.12.14'
     ],
     long_description=desc,
     long_description_content_type='text/markdown'
