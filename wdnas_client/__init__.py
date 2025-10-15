@@ -8,10 +8,15 @@ SCHEME = "http://"
 
 
 class client:
-    def __init__(self, username, password, host):
+    """Intialise client with username, password, host and version (2 or 5)"""
+    def __init__(self, username: str, password: str, host: str, version: int):
+        if version not in [2, 5]:
+            raise ValueError("Unsupported/invalid version. Must be 2 or 5.")
+        
         self.host = host
         self.username = username.lower()
         self.password = password
+        self.version = version
         self.session = None
         self.phpsessid = None
         self.wd_csrf_token = None
