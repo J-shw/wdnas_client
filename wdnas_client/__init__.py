@@ -6,6 +6,33 @@ import http.cookies
 RAW_LOGIN_STRING = 'cmd=wd_login&username={username}&pwd={enc_password}'
 SCHEME = "http://"
 
+ENDPOINTS = {
+    2: {
+        "login": "/cgi-bin/login_mgr.cgi",
+        "system_info": "/xml/sysinfo.xml",
+        "share_names": "/web/get_share_name_list.php",
+        "system_status": "/cgi-bin/status_mgr.cgi",
+        "network_info": "/cgi-bin/network_mgr.cgi?cmd=cgi_get_lan_xml",
+        "device_info": "/cgi-bin/system_mgr.cgi",
+        "system_version": "/cgi-bin/system_mgr.cgi",
+        "latest_version": "/cgi-bin/system_mgr.cgi",
+        "accounts": "/xml/account.xml",
+        "alerts": "/cgi-bin/system_mgr.cgi"
+    },
+    5: {
+        "login": "/nas/v1/auth",
+        "system_info": "/xml/sysinfo.xml",
+        "share_names": "/web/get_share_name_list.php",
+        "system_status": "/cgi-bin/status_mgr.cgi",
+        "network_info": "/cgi-bin/network_mgr.cgi?cmd=cgi_get_lan_xml",
+        "device_info": "/cgi-bin/system_mgr.cgi",
+        "system_version": "/cgi-bin/system_mgr.cgi",
+        "latest_version": "/cgi-bin/system_mgr.cgi",
+        "accounts": "/xml/account.xml",
+        "alerts": "/cgi-bin/system_mgr.cgi"
+    }
+}
+
 
 class client:
     """Intialise client with username, password, host and version (2 or 5)"""
@@ -30,7 +57,7 @@ class client:
         await self.session.close()
         
     async def login(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/login_mgr.cgi"
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['login']}"
         headers = {
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             "Host": self.host,
@@ -59,7 +86,7 @@ class client:
                 raise RequestFailedError(response.status)
     
     async def system_info(self):
-        url = f"{SCHEME}{self.host}/xml/sysinfo.xml"
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_info']}"
         headers = {
             "Host": self.host,
             "X-CSRF-Token": self.wd_csrf_token,
@@ -104,7 +131,7 @@ class client:
                 raise RequestFailedError(response.status)
     
     async def share_names(self):
-        url = f"{SCHEME}{self.host}/web/get_share_name_list.php"
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['share_names']}"
 
         headers = {
             "Host": self.host,
@@ -122,7 +149,7 @@ class client:
                 raise RequestFailedError(response.status)
     
     async def system_status(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/status_mgr.cgi"
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_status']}"
         data = 'cmd=resource'
         headers = {
             "Host": self.host,
@@ -143,7 +170,7 @@ class client:
                 raise RequestFailedError(response.status)
     
     async def network_info(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/network_mgr.cgi?cmd=cgi_get_lan_xml"
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['network_info']}"
         headers = {
             "Host": self.host,
             "X-CSRF-Token": self.wd_csrf_token,
@@ -175,7 +202,7 @@ class client:
                 raise RequestFailedError(response.status)
 
     async def device_info(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['device_info']}"
         data = 'cmd=cgi_get_device_info'
         headers = {
             "Host": self.host,
@@ -195,7 +222,7 @@ class client:
                 raise RequestFailedError(response.status)
 
     async def system_version(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_version']}"
         data = 'cmd=get_firm_v_xml'
         headers = {
             "Host": self.host,
@@ -214,7 +241,7 @@ class client:
                 raise RequestFailedError(response.status)
                      
     async def latest_version(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['device_info']}"
         data = 'cmd=get_auto_fw_version'
         headers = {
             "Host": self.host,
@@ -235,7 +262,7 @@ class client:
                 raise RequestFailedError(response.status)
     
     async def accounts(self):
-        url = f"{SCHEME}{self.host}/xml/account.xml"
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['accounts']}"
         headers = {
             "Host": self.host,
             "X-CSRF-Token": self.wd_csrf_token,
@@ -278,7 +305,7 @@ class client:
                 raise RequestFailedError(response.status)
     
     async def alerts(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['alerts']}"
         data = 'cmd=cgi_get_alert'
         headers = {
             "Host": self.host,
