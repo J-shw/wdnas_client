@@ -28,38 +28,46 @@ class client:
         
     async def login(self):
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['login']}"
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "Host": self.host,
-        }
 
         enc_password = base64.b64encode(self.password.encode('utf-8')).decode("utf-8")
 
         if self.version == 2:
             data = V2_RAW_LOGIN_STRING.format(username=self.username, enc_password=enc_password)
+            headers = {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "Host": self.host,
+            }
+            async with self.session.post(url, data=data, headers=headers) as response:
+                pass
         else:
-            data = {
+            json_payload = {
                 "username": self.username,
                 "password": enc_password
             }
+            headers = {
+                "Content-Type": "application/json; charset=UTF-8",
+                "Host": self.host,
+            }
+            async with self.session.post(url, json=json_payload, headers=headers) as response:
+                pass
 
-        async with self.session.post(url, data=data, headers=headers) as response:
-            if response.status == 200:
+        
+        if response.status == 200:
 
-                set_cookies = response.headers.getall('Set-Cookie', [])
-                for cookie_str in set_cookies:
-                    cookie = http.cookies.SimpleCookie(cookie_str)
-                    for key, morsel in cookie.items():
-                        self.session.cookie_jar.update_cookies({key: morsel.value})
+            set_cookies = response.headers.getall('Set-Cookie', [])
+            for cookie_str in set_cookies:
+                cookie = http.cookies.SimpleCookie(cookie_str)
+                for key, morsel in cookie.items():
+                    self.session.cookie_jar.update_cookies({key: morsel.value})
 
-                cookies = response.cookies
-                if "PHPSESSID" in cookies and "WD-CSRF-TOKEN" in cookies:
-                    self.phpsessid = cookies["PHPSESSID"].value
-                    self.wd_csrf_token = cookies["WD-CSRF-TOKEN"].value
-                else:
-                    raise InvalidLoginError("Invalid Username/Password or missing cookies")
+            cookies = response.cookies
+            if "PHPSESSID" in cookies and "WD-CSRF-TOKEN" in cookies:
+                self.phpsessid = cookies["PHPSESSID"].value
+                self.wd_csrf_token = cookies["WD-CSRF-TOKEN"].value
             else:
-                raise RequestFailedError(response.status)
+                raise InvalidLoginError("Invalid Username/Password or missing cookies")
+        else:
+            raise RequestFailedError(response.status)
     
     async def system_info(self):
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_info']}"
