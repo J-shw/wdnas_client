@@ -1,38 +1,8 @@
 import aiohttp, json, base64
 from .exceptions import InvalidLoginError, RequestFailedError
+from .const import V2_RAW_LOGIN_STRING, SCHEME, ENDPOINTS
 from xml.etree import ElementTree
 import http.cookies
-
-RAW_LOGIN_STRING = 'cmd=wd_login&username={username}&pwd={enc_password}'
-SCHEME = "http://"
-
-ENDPOINTS = {
-    2: {
-        "login": "/cgi-bin/login_mgr.cgi",
-        "system_info": "/xml/sysinfo.xml",
-        "share_names": "/web/get_share_name_list.php",
-        "system_status": "/cgi-bin/status_mgr.cgi",
-        "network_info": "/cgi-bin/network_mgr.cgi?cmd=cgi_get_lan_xml",
-        "device_info": "/cgi-bin/system_mgr.cgi",
-        "system_version": "/cgi-bin/system_mgr.cgi",
-        "latest_version": "/cgi-bin/system_mgr.cgi",
-        "accounts": "/xml/account.xml",
-        "alerts": "/cgi-bin/system_mgr.cgi"
-    },
-    5: {
-        "login": "/nas/v1/auth",
-        "system_info": "/xml/sysinfo.xml",
-        "share_names": "/web/get_share_name_list.php",
-        "system_status": "/cgi-bin/status_mgr.cgi",
-        "network_info": "/cgi-bin/network_mgr.cgi?cmd=cgi_get_lan_xml",
-        "device_info": "/cgi-bin/system_mgr.cgi",
-        "system_version": "/cgi-bin/system_mgr.cgi",
-        "latest_version": "/cgi-bin/system_mgr.cgi",
-        "accounts": "/xml/account.xml",
-        "alerts": "/cgi-bin/system_mgr.cgi"
-    }
-}
-
 
 class client:
     """Intialise client with username, password, host and version (2 or 5)"""
@@ -65,7 +35,13 @@ class client:
 
         enc_password = base64.b64encode(self.password.encode('utf-8')).decode("utf-8")
 
-        data = RAW_LOGIN_STRING.format(username=self.username, enc_password=enc_password)
+        if self.version == 2:
+            data = V2_RAW_LOGIN_STRING.format(username=self.username, enc_password=enc_password)
+        else:
+            data = {
+                "username": self.username,
+                "password": enc_password
+            }
 
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
