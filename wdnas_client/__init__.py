@@ -46,6 +46,7 @@ class client:
             }
             headers = {
                 "Content-Type": "application/json",
+                "Accept": "application/json",
                 "Host": self.host,
             }
             async with self.session.post(url, json=json_payload, headers=headers) as response:
