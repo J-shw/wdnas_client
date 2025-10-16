@@ -72,10 +72,16 @@ class client:
     
     async def system_info(self):
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_info']}"
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-        }
+        if self.version == 2:     
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+            }
+        else:
+            headers = {
+                "Host": self.host
+            }
+            
         async with self.session.get(url, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
