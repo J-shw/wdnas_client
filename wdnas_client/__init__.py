@@ -45,7 +45,7 @@ class client:
                 "password": enc_password
             }
             headers = {
-                "Content-Type": "application/json; charset=UTF-8",
+                "Content-Type": "application/json",
                 "Host": self.host,
             }
             async with self.session.post(url, json=json_payload, headers=headers) as response:
