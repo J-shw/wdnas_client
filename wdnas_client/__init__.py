@@ -39,7 +39,7 @@ class client:
             }
             async with self.session.post(url, data=data, headers=headers) as response:
                 pass
-        else:
+        elif self.version == 5:
             json_payload = {
                 "username": self.username,
                 "password": enc_password
@@ -62,11 +62,16 @@ class client:
                     self.session.cookie_jar.update_cookies({key: morsel.value})
 
             cookies = response.cookies
-            if "PHPSESSID" in cookies and "WD-CSRF-TOKEN" in cookies:
-                self.phpsessid = cookies["PHPSESSID"].value
-                self.wd_csrf_token = cookies["WD-CSRF-TOKEN"].value
-            else:
-                raise InvalidLoginError("Invalid Username/Password or missing cookies")
+
+            if self.version == 2:
+                if "PHPSESSID" in cookies and "WD-CSRF-TOKEN" in cookies:
+                    self.phpsessid = cookies["PHPSESSID"].value
+                    self.wd_csrf_token = cookies["WD-CSRF-TOKEN"].value
+                else:
+                    raise InvalidLoginError("Invalid Username/Password or missing cookies")
+            elif self.version == 5:
+                if "PHPSESSID" in cookies:
+                    self.phpsessid = cookies["PHPSESSID"].value
         else:
             raise RequestFailedError(response.status)
     
@@ -77,7 +82,7 @@ class client:
                 "Host": self.host,
                 "X-CSRF-Token": self.wd_csrf_token,
             }
-        else:
+        elif self.version == 5:
             headers = {
                 "Host": self.host
             }
