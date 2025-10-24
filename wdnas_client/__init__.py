@@ -187,14 +187,19 @@ class client:
                 raise RequestFailedError(response.status)
     
     async def network_info(self):
-        if self.version != 2:
-            raise ValueError("Unsupported/invalid version. Must be 2.")
-        
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['network_info']}"
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-        }
+
+        if self.version == 2:
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+            }
+        elif self.version == 5:
+            headers = {
+                "Host": self.host
+            }
+        else:
+            raise ValueError("Unsupported/invalid version.")
 
         async with self.session.get(url, headers=headers) as response:
             if response.status == 200:
