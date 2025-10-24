@@ -15,9 +15,12 @@ async def main():
         print("Network Info:", await wdNAS.network_info())
         print("Device Info:", await wdNAS.device_info())
         print("System Version:", await wdNAS.system_version())
-        print("Latest Version:", await wdNAS.latest_version())
         print("Accounts:", await wdNAS.accounts())
         print("Alerts:", await wdNAS.alerts())
+
+        # V2 systems only
+        if version == 2:
+            print("Latest Version:", await wdNAS.latest_version())
 
         # V5 systems only
         if version == 5:
