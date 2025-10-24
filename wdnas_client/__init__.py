@@ -1,17 +1,19 @@
 import aiohttp, json, base64
 from .exceptions import InvalidLoginError, RequestFailedError
+from .const import V2_RAW_LOGIN_STRING, SCHEME, ENDPOINTS
 from xml.etree import ElementTree
 import http.cookies
 
-RAW_LOGIN_STRING = 'cmd=wd_login&username={username}&pwd={enc_password}'
-SCHEME = "http://"
-
-
 class client:
-    def __init__(self, username, password, host):
+    """Intialise client with username, password, host and version (2 or 5)"""
+    def __init__(self, username: str, password: str, host: str, version: int):
+        if version not in [2, 5]:
+            raise ValueError("Unsupported/invalid version. Must be 2 or 5.")
+        
         self.host = host
         self.username = username.lower()
         self.password = password
+        self.version = version
         self.session = None
         self.phpsessid = None
         self.wd_csrf_token = None
@@ -25,40 +27,68 @@ class client:
         await self.session.close()
         
     async def login(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/login_mgr.cgi"
-        headers = {
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "Host": self.host,
-        }
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['login']}"
 
         enc_password = base64.b64encode(self.password.encode('utf-8')).decode("utf-8")
 
-        data = RAW_LOGIN_STRING.format(username=self.username, enc_password=enc_password)
+        if self.version == 2:
+            data = V2_RAW_LOGIN_STRING.format(username=self.username, enc_password=enc_password)
+            headers = {
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "Host": self.host,
+            }
+            async with self.session.post(url, data=data, headers=headers) as response:
+                pass
+        elif self.version == 5:
+            json_payload = {
+                "username": self.username,
+                "password": enc_password
+            }
+            headers = {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Host": self.host,
+            }
+            async with self.session.post(url, json=json_payload, headers=headers) as response:
+                pass
 
-        async with self.session.post(url, data=data, headers=headers) as response:
-            if response.status == 200:
+        
+        if response.status == 200:
 
-                set_cookies = response.headers.getall('Set-Cookie', [])
-                for cookie_str in set_cookies:
-                    cookie = http.cookies.SimpleCookie(cookie_str)
-                    for key, morsel in cookie.items():
-                        self.session.cookie_jar.update_cookies({key: morsel.value})
+            set_cookies = response.headers.getall('Set-Cookie', [])
+            for cookie_str in set_cookies:
+                cookie = http.cookies.SimpleCookie(cookie_str)
+                for key, morsel in cookie.items():
+                    self.session.cookie_jar.update_cookies({key: morsel.value})
 
-                cookies = response.cookies
+            cookies = response.cookies
+
+            if self.version == 2:
                 if "PHPSESSID" in cookies and "WD-CSRF-TOKEN" in cookies:
                     self.phpsessid = cookies["PHPSESSID"].value
                     self.wd_csrf_token = cookies["WD-CSRF-TOKEN"].value
                 else:
                     raise InvalidLoginError("Invalid Username/Password or missing cookies")
-            else:
-                raise RequestFailedError(response.status)
+            elif self.version == 5:
+                if "PHPSESSID" in cookies:
+                    self.phpsessid = cookies["PHPSESSID"].value
+        else:
+            raise RequestFailedError(response.status)
     
     async def system_info(self):
-        url = f"{SCHEME}{self.host}/xml/sysinfo.xml"
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-        }
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_info']}"
+        if self.version == 2:     
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+            }
+        elif self.version == 5:
+            headers = {
+                "Host": self.host
+            }
+        else:
+            raise ValueError("Unsupported/invalid version.")
+            
         async with self.session.get(url, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -99,12 +129,20 @@ class client:
                 raise RequestFailedError(response.status)
     
     async def share_names(self):
-        url = f"{SCHEME}{self.host}/web/get_share_name_list.php"
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['share_names']}"
 
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-        }
+        if self.version == 2:     
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+            }
+        elif self.version == 5:
+            headers = {
+                "Host": self.host
+            }
+        else:
+            raise ValueError("Unsupported/invalid version.")
+
         async with self.session.post(url, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -117,13 +155,24 @@ class client:
                 raise RequestFailedError(response.status)
     
     async def system_status(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/status_mgr.cgi"
-        data = 'cmd=resource'
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        }
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_status']}"
+
+        if self.version == 2:     
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+            data = 'cmd=resource'
+        elif self.version == 5:
+            headers = {
+                "Host": self.host,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+            data = 'cmd=resource'
+        else:
+            raise ValueError("Unsupported/invalid version.")
+
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -138,11 +187,19 @@ class client:
                 raise RequestFailedError(response.status)
     
     async def network_info(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/network_mgr.cgi?cmd=cgi_get_lan_xml"
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-        }
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['network_info']}"
+
+        if self.version == 2:
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+            }
+        elif self.version == 5:
+            headers = {
+                "Host": self.host
+            }
+        else:
+            raise ValueError("Unsupported/invalid version.")
 
         async with self.session.get(url, headers=headers) as response:
             if response.status == 200:
@@ -170,13 +227,23 @@ class client:
                 raise RequestFailedError(response.status)
 
     async def device_info(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
-        data = 'cmd=cgi_get_device_info'
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        }
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['device_info']}"
+        if self.version == 2:
+            data = 'cmd=cgi_get_device_info'
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+        elif self.version == 5:
+            data = 'cmd=cgi_get_device_info'
+            headers = {
+                "Host": self.host,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+        else:
+            raise ValueError("Unsupported/invalid version.")
+
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -190,13 +257,23 @@ class client:
                 raise RequestFailedError(response.status)
 
     async def system_version(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
-        data = 'cmd=get_firm_v_xml'
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        }
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_version']}"
+        if self.version == 2:
+            data = 'cmd=get_firm_v_xml'
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+        elif self.version == 5:
+            data = 'cmd=get_firm_v_xml'
+            headers = {
+                "Host": self.host,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+        else:
+            raise ValueError("Unsupported/invalid version.")
+
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -209,13 +286,17 @@ class client:
                 raise RequestFailedError(response.status)
                      
     async def latest_version(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
+        if self.version != 2:
+            raise ValueError("Unsupported/invalid version. Must be 2.")
+        
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['device_info']}"
         data = 'cmd=get_auto_fw_version'
         headers = {
             "Host": self.host,
             "X-CSRF-Token": self.wd_csrf_token,
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         }
+
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -230,11 +311,19 @@ class client:
                 raise RequestFailedError(response.status)
     
     async def accounts(self):
-        url = f"{SCHEME}{self.host}/xml/account.xml"
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-        }
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['accounts']}"
+        if self.version == 2:
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+            }
+        elif self.version == 5:
+            headers = {
+                "Host": self.host,
+            }
+        else:
+            raise ValueError("Unsupported/invalid version.")
+        
         async with self.session.post(url, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -273,13 +362,22 @@ class client:
                 raise RequestFailedError(response.status)
     
     async def alerts(self):
-        url = f"{SCHEME}{self.host}/cgi-bin/system_mgr.cgi"
+        url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['alerts']}"
         data = 'cmd=cgi_get_alert'
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        }
+        if self.version == 2:
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+        elif self.version == 5:
+            headers = {
+                "Host": self.host,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+        else:
+            raise ValueError("Unsupported/invalid version.")
+        
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -295,5 +393,43 @@ class client:
                         "time": user.findtext('time'),
                     })
                 return json_alerts
+            else:
+                raise RequestFailedError(response.status)
+    
+    async def cloud_access(self):
+        if self.version != 5:
+            raise ValueError("Unsupported/invalid version. Must be 5.")
+        
+        url = f"{SCHEME}{self.host}/web/restSDK/cloudAccess.php"
+
+        data = 'cmd=getCloudAccess'
+        headers = {
+            "Host": self.host,
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        }
+
+        async with self.session.post(url, data=data, headers=headers) as response:
+            if response.status == 200:
+                content = await response.text()
+                json_content = json.loads(content)
+                return json_content
+            else:
+                raise RequestFailedError(response.status)
+
+    async def usb_info(self):
+        if self.version != 5:
+            raise ValueError("Unsupported/invalid version. Must be 5.")
+        
+        url = f"{SCHEME}{self.host}/web/get_usb_info.php"
+
+        headers = {
+            "Host": self.host
+        }
+
+        async with self.session.post(url, headers=headers) as response:
+            if response.status == 200:
+                content = await response.text()
+                json_content = json.loads(content)
+                return json_content
             else:
                 raise RequestFailedError(response.status)
