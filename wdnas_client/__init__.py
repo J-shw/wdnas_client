@@ -169,7 +169,7 @@ class client:
                 "Host": self.host,
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
             }
-            data = 'cmd=cgi_get_general'
+            data = 'cmd=resource'
         else:
             raise ValueError("Unsupported/invalid version.")
 
@@ -286,22 +286,16 @@ class client:
                 raise RequestFailedError(response.status)
                      
     async def latest_version(self):
+        if self.version != 2:
+            raise ValueError("Unsupported/invalid version. Must be 2.")
+        
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['device_info']}"
-        if self.version == 2:
-            data = 'cmd=get_auto_fw_version'
-            headers = {
-                "Host": self.host,
-                "X-CSRF-Token": self.wd_csrf_token,
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            }
-        elif self.version == 5:
-            data = 'cmd=get_auto_fw_version'
-            headers = {
-                "Host": self.host,
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            }
-        else:
-            raise ValueError("Unsupported/invalid version.")
+        data = 'cmd=get_auto_fw_version'
+        headers = {
+            "Host": self.host,
+            "X-CSRF-Token": self.wd_csrf_token,
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        }
 
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
