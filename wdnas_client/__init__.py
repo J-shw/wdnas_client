@@ -86,6 +86,8 @@ class client:
             headers = {
                 "Host": self.host
             }
+        else:
+            raise ValueError("Unsupported/invalid version.")
             
         async with self.session.get(url, headers=headers) as response:
             if response.status == 200:
@@ -129,10 +131,18 @@ class client:
     async def share_names(self):
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['share_names']}"
 
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-        }
+        if self.version == 2:     
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+            }
+        elif self.version == 5:
+            headers = {
+                "Host": self.host
+            }
+        else:
+            raise ValueError("Unsupported/invalid version.")
+
         async with self.session.post(url, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -146,12 +156,23 @@ class client:
     
     async def system_status(self):
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_status']}"
-        data = 'cmd=resource'
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        }
+
+        if self.version == 2:     
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+            data = 'cmd=resource'
+        elif self.version == 5:
+            headers = {
+                "Host": self.host,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+            data = 'cmd=cgi_get_general'
+        else:
+            raise ValueError("Unsupported/invalid version.")
+
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -166,6 +187,9 @@ class client:
                 raise RequestFailedError(response.status)
     
     async def network_info(self):
+        if self.version != 2:
+            raise ValueError("Unsupported/invalid version. Must be 2.")
+        
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['network_info']}"
         headers = {
             "Host": self.host,
@@ -199,12 +223,22 @@ class client:
 
     async def device_info(self):
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['device_info']}"
-        data = 'cmd=cgi_get_device_info'
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        }
+        if self.version == 2:
+            data = 'cmd=cgi_get_device_info'
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+        elif self.version == 5:
+            data = 'cmd=cgi_get_device_info'
+            headers = {
+                "Host": self.host,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+        else:
+            raise ValueError("Unsupported/invalid version.")
+
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -219,12 +253,22 @@ class client:
 
     async def system_version(self):
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_version']}"
-        data = 'cmd=get_firm_v_xml'
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        }
+        if self.version == 2:
+            data = 'cmd=get_firm_v_xml'
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+        elif self.version == 5:
+            data = 'cmd=get_firm_v_xml'
+            headers = {
+                "Host": self.host,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+        else:
+            raise ValueError("Unsupported/invalid version.")
+
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -238,12 +282,22 @@ class client:
                      
     async def latest_version(self):
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['device_info']}"
-        data = 'cmd=get_auto_fw_version'
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        }
+        if self.version == 2:
+            data = 'cmd=get_auto_fw_version'
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+        elif self.version == 5:
+            data = 'cmd=get_auto_fw_version'
+            headers = {
+                "Host": self.host,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+        else:
+            raise ValueError("Unsupported/invalid version.")
+
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -259,10 +313,18 @@ class client:
     
     async def accounts(self):
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['accounts']}"
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-        }
+        if self.version == 2:
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+            }
+        elif self.version == 5:
+            headers = {
+                "Host": self.host,
+            }
+        else:
+            raise ValueError("Unsupported/invalid version.")
+        
         async with self.session.post(url, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -303,11 +365,20 @@ class client:
     async def alerts(self):
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['alerts']}"
         data = 'cmd=cgi_get_alert'
-        headers = {
-            "Host": self.host,
-            "X-CSRF-Token": self.wd_csrf_token,
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        }
+        if self.version == 2:
+            headers = {
+                "Host": self.host,
+                "X-CSRF-Token": self.wd_csrf_token,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+        elif self.version == 5:
+            headers = {
+                "Host": self.host,
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            }
+        else:
+            raise ValueError("Unsupported/invalid version.")
+        
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
@@ -323,5 +394,43 @@ class client:
                         "time": user.findtext('time'),
                     })
                 return json_alerts
+            else:
+                raise RequestFailedError(response.status)
+    
+    async def cloud_access(self):
+        if self.version != 5:
+            raise ValueError("Unsupported/invalid version. Must be 5.")
+        
+        url = f"{SCHEME}{self.host}/web/restSDK/cloudAccess.php"
+
+        data = 'cmd=getCloudAccess'
+        headers = {
+            "Host": self.host,
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        }
+
+        async with self.session.post(url, data=data, headers=headers) as response:
+            if response.status == 200:
+                content = await response.text()
+                json_content = json.loads(content)
+                return json_content
+            else:
+                raise RequestFailedError(response.status)
+
+    async def usb_info(self):
+        if self.version != 5:
+            raise ValueError("Unsupported/invalid version. Must be 5.")
+        
+        url = f"{SCHEME}{self.host}/web/get_usb_info.php"
+
+        headers = {
+            "Host": self.host
+        }
+
+        async with self.session.post(url, headers=headers) as response:
+            if response.status == 200:
+                content = await response.text()
+                json_content = json.loads(content)
+                return json_content
             else:
                 raise RequestFailedError(response.status)
