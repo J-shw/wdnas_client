@@ -2,7 +2,7 @@
 
 This document outlines the API endpoints for the WD NAS systems supported by this module.
 
-## Software Version 2 (V2)
+## Version 2 Systems (V2)
 
 | Function | HTTP Method | Endpoint | Parameters / Body | Notes |
 | --- | --- | --- | --- | --- |
@@ -17,7 +17,7 @@ This document outlines the API endpoints for the WD NAS systems supported by thi
 | Accounts | `POST` | `/xml/account.xml` | *None* | |
 | Alerts | `POST` | `/cgi-bin/system_mgr.cgi` | `cmd=cgi_get_alert` | `application/x-www-form-urlencoded` body |
 
-## Software Version 5 (V5)
+## Version 5 Systems (V5)
 
 | Function | HTTP Method | Endpoint | Parameters / Body | Notes |
 | --- | --- | --- | --- | --- |
