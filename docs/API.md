@@ -31,4 +31,4 @@ This document outlines the API endpoints for the WD NAS systems supported by thi
 | Accounts | `POST` | `/xml/account.xml` | *None* | |
 | Alerts | `POST` | `/cgi-bin/system_mgr.cgi` | `cmd=cgi_get_alert` | `application/x-www-form-urlencoded` body |
 | Cloud Access | `POST` | `/web/restSDK/cloudAccess.php` | `cmd=getCloudAccess` | `application/x-www-form-urlencoded` body |
-| USE Info | `POST` | `/web/get_usb_info.php` | *None* | |
+| USB Info | `POST` | `/web/get_usb_info.php` | *None* | |
