@@ -18,5 +18,6 @@ This document outlines the supported WD NAS systems.
 
 | Model |Firmware Version | Supported |
 | --- | --- | --- |
+| My Cloud Home | 5.31.108 | - |
 | My Cloud EX2 Ultra | 5.31.108 | &#10003; |
 | WD My Cloud PR2100 | 5.31.108 | - |
