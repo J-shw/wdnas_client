@@ -1,4 +1,6 @@
 import aiohttp, json, base64
+import re
+from datetime import timedelta
 from .exceptions import InvalidLoginError, RequestFailedError
 from .const import V2_RAW_LOGIN_STRING, SCHEME, ENDPOINTS
 from xml.etree import ElementTree
@@ -433,3 +435,66 @@ class client:
                 return json_content
             else:
                 raise RequestFailedError(response.status)
+
+
+    async def uptime(self):
+        """
+        Retrieve system uptime (only available for version 5).
+        Returns the uptime string, e.g. "5 days 7 hours 58 minutes".
+        """
+        if self.version != 5:
+            raise ValueError("Unsupported/invalid version. Must be 5.")
+        
+        url = f"http://{self.host}/cgi-bin/status_mgr.cgi"
+        data = "cmd=cgi_get_status"
+        headers = {
+            "Host": self.host,
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        }
+
+        async with self.session.post(url, data=data, headers=headers) as response:
+            text = await response.text()
+            if response.status != 200:
+                raise RequestFailedError(response.status)
+            
+            match = re.search(r"<uptime>(.*?)</uptime>", text, re.S)
+            if match:
+                return match.group(1).strip()
+            else:
+                raise RequestFailedError("Uptime not found in XML response.")
+
+    async def parsed_uptime_seconds(self):
+        """
+        Parse the uptime string into total seconds.
+        Returns an integer (seconds).
+        """
+        uptime_str = await self.uptime()
+
+        # Default values
+        d = h = m = 0
+
+        # Extract numeric values safely
+        if match := re.search(r"(\d+)\s*day", uptime_str):
+            d = int(match.group(1))
+        if match := re.search(r"(\d+)\s*hour", uptime_str):
+            h = int(match.group(1))
+        if match := re.search(r"(\d+)\s*minute", uptime_str):
+            m = int(match.group(1))
+
+        return int(timedelta(days=d, hours=h, minutes=m).total_seconds())
+
+    async def alerts_summary(self):
+        """
+        Returns a tuple:
+        (alert_count, [list of readable error messages])
+        Example:
+            (2, ["Network disconnected (...)", "Power supply failed (...)"])
+        """
+        alerts = await self.alerts()
+        count = len(alerts)
+        messages = []
+        for alert in alerts:
+            msg = alert.get("msg", "Unknown alert")
+            desc = alert.get("desc", "")
+            messages.append(f"{msg} ({desc})")
+        return count, messages
