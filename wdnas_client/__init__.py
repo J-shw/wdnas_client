@@ -319,10 +319,22 @@ class client:
                 content = await response.text()
                 latest_version = ElementTree.fromstring(content)
                 json_latest_version = {"new": None, "details": {}}
-                json_latest_version['new'] = bool(int(latest_version.find('.//new').text))
-                json_latest_version['details']['version'] = latest_version.find('.//version').text
-                json_latest_version['details']['path'] = latest_version.find('.//path').text
-                json_latest_version['details']['releasenote'] = latest_version.find('.//releasenote').text
+
+                new_node = latest_version.find('.//new')
+                version_node = latest_version.find('.//version')
+                path_node = latest_version.find('.//path')
+                releasenote_node = latest_version.find('.//releasenote')
+
+
+                if new_node is not None:
+                    json_latest_version["new"] = bool(int(new_node.text))
+                if version_node is not None:
+                    json_latest_version["details"]["version"] = version_node.text
+                if path_node is not None:
+                    json_latest_version["details"]["path"] = path_node.text
+                if releasenote_node is not None:
+                    json_latest_version["details"]["releasenote"] = releasenote_node.text
+                
                 return json_latest_version
             else:
                 raise RequestFailedError(response.status)
