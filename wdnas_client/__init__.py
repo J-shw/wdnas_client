@@ -248,10 +248,20 @@ class client:
             if response.status == 200:
                 content = await response.text()
                 device_info = ElementTree.fromstring(content)
+
                 json_device_info = {"serial_number": None, "name": None, "description": None}
-                json_device_info['serial_number'] = device_info.find('.//serial_number').text
-                json_device_info['name'] = device_info.find('.//name').text
-                json_device_info['description'] = device_info.find('.//description').text
+
+                serial_number_node = device_info.find('.//serial_number')
+                name_node = device_info.find('.//name')
+                description_node = device_info.find('.//description')
+
+                if serial_number_node is not None:
+                    json_device_info["serial_number"] = serial_number_node.text
+                if name_node is not None:
+                    json_device_info["name"] = name_node.text
+                if description_node is not None:
+                    json_device_info["description"] = description_node.text
+
                 return json_device_info
             else:
                 raise RequestFailedError(response.status)
@@ -279,8 +289,15 @@ class client:
                 content = await response.text()
                 device_version = ElementTree.fromstring(content)
                 json_device_version = {"firmware": None, "oled": None}
-                json_device_version['firmware'] = device_version.find('.//fw').text
-                json_device_version['oled'] = device_version.find('.//oled').text.strip('\n')
+
+                firmware_node = device_version.find('.//fw')
+                oled_node = device_version.find('.//oled')
+
+                if firmware_node is not None:
+                    json_device_version["firmware"] = firmware_node.text
+                if oled_node is not None:
+                    json_device_version["oled"] = oled_node.text.strip('\n')
+
                 return json_device_version
             else:
                 raise RequestFailedError(response.status)
@@ -302,10 +319,22 @@ class client:
                 content = await response.text()
                 latest_version = ElementTree.fromstring(content)
                 json_latest_version = {"new": None, "details": {}}
-                json_latest_version['new'] = bool(int(latest_version.find('.//new').text))
-                json_latest_version['details']['version'] = latest_version.find('.//version').text
-                json_latest_version['details']['path'] = latest_version.find('.//path').text
-                json_latest_version['details']['releasenote'] = latest_version.find('.//releasenote').text
+
+                new_node = latest_version.find('.//new')
+                version_node = latest_version.find('.//version')
+                path_node = latest_version.find('.//path')
+                releasenote_node = latest_version.find('.//releasenote')
+
+
+                if new_node is not None:
+                    json_latest_version["new"] = bool(int(new_node.text))
+                if version_node is not None:
+                    json_latest_version["details"]["version"] = version_node.text
+                if path_node is not None:
+                    json_latest_version["details"]["path"] = path_node.text
+                if releasenote_node is not None:
+                    json_latest_version["details"]["releasenote"] = releasenote_node.text
+                
                 return json_latest_version
             else:
                 raise RequestFailedError(response.status)
