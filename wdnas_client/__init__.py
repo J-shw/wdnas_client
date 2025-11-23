@@ -248,10 +248,20 @@ class client:
             if response.status == 200:
                 content = await response.text()
                 device_info = ElementTree.fromstring(content)
+
                 json_device_info = {"serial_number": None, "name": None, "description": None}
-                json_device_info['serial_number'] = device_info.find('.//serial_number').text
-                json_device_info['name'] = device_info.find('.//name').text
-                json_device_info['description'] = device_info.find('.//description').text
+
+                serial_number_node = device_info.find('.//serial_number')
+                name_node = device_info.find('.//name')
+                description_node = device_info.find('.//description')
+
+                if serial_number_node is not None:
+                    json_device_info["serial_number"] = serial_number_node.text
+                if name_node is not None:
+                    json_device_info["name"] = name_node.text
+                if description_node is not None:
+                    json_device_info["description"] = description_node.text
+
                 return json_device_info
             else:
                 raise RequestFailedError(response.status)
