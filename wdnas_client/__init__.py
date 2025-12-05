@@ -383,18 +383,19 @@ class client:
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
-                alerts = ElementTree.fromstring(content)
-                json_alerts = []
-                for user in alerts.iter('alerts'):
-                    json_alerts.append ({
-                        "code": user.findtext('code'),
-                        "seq_num": user.findtext('seq_num'),
-                        "level": user.findtext('level'),
-                        "msg": user.findtext('msg'),
-                        "desc": user.findtext('desc'),
-                        "time": user.findtext('time'),
+                alerts_xml = ElementTree.fromstring(content)
+                alerts_list = []
+                for entry in alerts_xml.iter("alerts"):
+                    alerts_list.append({
+                        "code": entry.findtext("code"),
+                        "seq_num": entry.findtext("seq_num"),
+                        "level": entry.findtext("level"),
+                        "msg": entry.findtext("msg"),
+                        "desc": entry.findtext("desc"),
+                        "time": entry.findtext("time")
                     })
-                return json_alerts
+        
+                return len(alerts_list), alerts_list
             else:
                 raise RequestFailedError(response.status)
     
@@ -435,66 +436,43 @@ class client:
                 return json_content
             else:
                 raise RequestFailedError(response.status)
-
-
-    async def uptime(self):
+    
+    async def uptime(self) -> int:
         """
-        Retrieve system uptime (only available for version 5).
-        Returns the uptime string, e.g. "5 days 7 hours 58 minutes".
+        Returns the device uptime in seconds (parsed).
         """
         if self.version != 5:
             raise ValueError("Unsupported/invalid version. Must be 5.")
-        
-        url = f"http://{self.host}/cgi-bin/status_mgr.cgi"
-        data = "cmd=cgi_get_status"
+    
+        url = f"{SCHEME}{self.host}/cgi-bin/status_mgr.cgi"
+    
         headers = {
             "Host": self.host,
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         }
-
+    
+        data = "cmd=cgi_get_uptime"
+    
         async with self.session.post(url, data=data, headers=headers) as response:
-            text = await response.text()
             if response.status != 200:
                 raise RequestFailedError(response.status)
-            
+    
+            text = await response.text()
+    
             match = re.search(r"<uptime>(.*?)</uptime>", text, re.S)
-            if match:
-                return match.group(1).strip()
-            else:
+            if not match:
                 raise RequestFailedError("Uptime not found in XML response.")
-
-    async def parsed_uptime_seconds(self):
-        """
-        Parse the uptime string into total seconds.
-        Returns an integer (seconds).
-        """
-        uptime_str = await self.uptime()
-
-        # Default values
-        d = h = m = 0
-
-        # Extract numeric values safely
-        if match := re.search(r"(\d+)\s*day", uptime_str):
-            d = int(match.group(1))
-        if match := re.search(r"(\d+)\s*hour", uptime_str):
-            h = int(match.group(1))
-        if match := re.search(r"(\d+)\s*minute", uptime_str):
-            m = int(match.group(1))
-
-        return int(timedelta(days=d, hours=h, minutes=m).total_seconds())
-
-    async def alerts_summary(self):
-        """
-        Returns a tuple:
-        (alert_count, [list of readable error messages])
-        Example:
-            (2, ["Network disconnected (...)", "Power supply failed (...)"])
-        """
-        alerts = await self.alerts()
-        count = len(alerts)
-        messages = []
-        for alert in alerts:
-            msg = alert.get("msg", "Unknown alert")
-            desc = alert.get("desc", "")
-            messages.append(f"{msg} ({desc})")
-        return count, messages
+    
+            uptime_raw = match.group(1).strip()
+    
+            match = re.search(
+                r"(\d+)\s*days?\s*(\d+)\s*hour[s]?\s*(\d+)\s*minute[s]?",
+                uptime_raw,
+                re.I,
+            )
+    
+            if not match:
+                raise RequestFailedError(f"Unexpected uptime format: {uptime_raw}")
+    
+            d, h, m = map(int, match.groups())
+            return int(timedelta(days=d, hours=h, minutes=m).total_seconds())
