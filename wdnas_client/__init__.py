@@ -7,7 +7,17 @@ from xml.etree import ElementTree
 import http.cookies
 
 class client:
-    """Intialise client with username, password, host and version (2 or 5)"""
+    """
+    A client class for interacting with the WD NAS device API's (Versions 2 or 5).
+
+    :host: The hostname or IP address of the device.
+    :username: The username used for authentication (stored in lowercase).
+    :password: The password used for authentication.
+    :version: The API version being used (2 or 5).
+    :session: An aiohttp.ClientSession object for making async requests (initially None).
+    :phpsessid: The PHP session ID token (initially None; set after login).
+    :wd_csrf_token: The CSRF token required for v2 requests (initially None; set after login).
+    """
     def __init__(self, username: str, password: str, host: str, version: int):
         if version not in [2, 5]:
             raise ValueError("Unsupported/invalid version. Must be 2 or 5.")
