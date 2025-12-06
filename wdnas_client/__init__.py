@@ -1,4 +1,6 @@
 import aiohttp, json, base64
+import re
+from datetime import timedelta
 from .exceptions import InvalidLoginError, RequestFailedError
 from .const import V2_RAW_LOGIN_STRING, SCHEME, ENDPOINTS
 from xml.etree import ElementTree
@@ -410,18 +412,19 @@ class client:
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
-                alerts = ElementTree.fromstring(content)
-                json_alerts = []
-                for user in alerts.iter('alerts'):
-                    json_alerts.append ({
-                        "code": user.findtext('code'),
-                        "seq_num": user.findtext('seq_num'),
-                        "level": user.findtext('level'),
-                        "msg": user.findtext('msg'),
-                        "desc": user.findtext('desc'),
-                        "time": user.findtext('time'),
+                alerts_xml = ElementTree.fromstring(content)
+                alerts_list = []
+                for entry in alerts_xml.iter("alerts"):
+                    alerts_list.append({
+                        "code": entry.findtext("code"),
+                        "seq_num": entry.findtext("seq_num"),
+                        "level": entry.findtext("level"),
+                        "msg": entry.findtext("msg"),
+                        "desc": entry.findtext("desc"),
+                        "time": entry.findtext("time")
                     })
-                return json_alerts
+        
+                return len(alerts_list), alerts_list
             else:
                 raise RequestFailedError(response.status)
     
@@ -462,3 +465,43 @@ class client:
                 return json_content
             else:
                 raise RequestFailedError(response.status)
+    
+    async def uptime(self) -> int:
+        """
+        Returns the device uptime in seconds (parsed).
+        """
+        if self.version != 5:
+            raise ValueError("Unsupported/invalid version. Must be 5.")
+    
+        url = f"{SCHEME}{self.host}/cgi-bin/status_mgr.cgi"
+    
+        headers = {
+            "Host": self.host,
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        }
+    
+        data = "cmd=cgi_get_uptime"
+    
+        async with self.session.post(url, data=data, headers=headers) as response:
+            if response.status != 200:
+                raise RequestFailedError(response.status)
+    
+            text = await response.text()
+    
+            match = re.search(r"<uptime>(.*?)</uptime>", text, re.S)
+            if not match:
+                raise RequestFailedError("Uptime not found in XML response.")
+    
+            uptime_raw = match.group(1).strip()
+    
+            match = re.search(
+                r"(\d+)\s*days?\s*(\d+)\s*hour[s]?\s*(\d+)\s*minute[s]?",
+                uptime_raw,
+                re.I,
+            )
+    
+            if not match:
+                raise RequestFailedError(f"Unexpected uptime format: {uptime_raw}")
+    
+            d, h, m = map(int, match.groups())
+            return int(timedelta(days=d, hours=h, minutes=m).total_seconds())
