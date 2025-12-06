@@ -28,7 +28,8 @@ class client:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.session.close()
         
-    async def login(self):
+    async def login(self) -> None:
+        """Login to device"""
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['login']}"
 
         enc_password = base64.b64encode(self.password.encode('utf-8')).decode("utf-8")
@@ -77,7 +78,13 @@ class client:
         else:
             raise RequestFailedError(response.status)
     
-    async def system_info(self):
+    async def system_info(self) -> dict:
+        """
+        Fetches system information from the device.
+
+        This includes data about physical **disks**, logical **volumes**, and overall
+        storage **size** (total, used, and unused).
+        """
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_info']}"
         if self.version == 2:     
             headers = {
@@ -130,7 +137,8 @@ class client:
             else:
                 raise RequestFailedError(response.status)
     
-    async def share_names(self):
+    async def share_names(self) -> list:
+        """Fetches a list of all share names configured on the device."""
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['share_names']}"
 
         if self.version == 2:     
@@ -156,7 +164,12 @@ class client:
             else:
                 raise RequestFailedError(response.status)
     
-    async def system_status(self):
+    async def system_status(self) -> dict:
+        """
+        Fetches system status from the device.
+
+        This includes data about **CPU** and **memory** usage.
+        """
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_status']}"
 
         if self.version == 2:     
@@ -188,7 +201,12 @@ class client:
             else:
                 raise RequestFailedError(response.status)
     
-    async def network_info(self):
+    async def network_info(self) -> dict:
+        """
+        Fetches network information from the device.
+
+        This includes device **IP**, **MAC Address** and **Speed**.
+        """
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['network_info']}"
 
         if self.version == 2:
@@ -228,7 +246,12 @@ class client:
             else:
                 raise RequestFailedError(response.status)
 
-    async def device_info(self):
+    async def device_info(self) -> dict:
+        """
+        Fetches device information from the device.
+
+        Data such as **Serial Number**, **Name** and **Description** are returned.
+        """
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['device_info']}"
         if self.version == 2:
             data = 'cmd=cgi_get_device_info'
@@ -268,7 +291,8 @@ class client:
             else:
                 raise RequestFailedError(response.status)
 
-    async def system_version(self):
+    async def system_version(self) -> dict:
+        """Fetches system firmware version from the device."""
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_version']}"
         if self.version == 2:
             data = 'cmd=get_firm_v_xml'
@@ -304,7 +328,12 @@ class client:
             else:
                 raise RequestFailedError(response.status)
                      
-    async def latest_version(self):
+    async def latest_version(self) -> dict:
+        """
+        Fetches the latest firmware version from the device.
+
+        Only devices with **V2** OS are supported.
+        """
         if self.version != 2:
             raise ValueError("Unsupported/invalid version. Must be 2.")
         
@@ -341,7 +370,8 @@ class client:
             else:
                 raise RequestFailedError(response.status)
     
-    async def accounts(self):
+    async def accounts(self) -> dict:
+        """Fetches account information from the device."""
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['accounts']}"
         if self.version == 2:
             headers = {
@@ -392,7 +422,8 @@ class client:
             else:
                 raise RequestFailedError(response.status)
     
-    async def alerts(self):
+    async def alerts(self) -> tuple:
+        """Retrieves the current system alerts and notifications from the device."""
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['alerts']}"
         data = 'cmd=cgi_get_alert'
         if self.version == 2:
@@ -428,7 +459,12 @@ class client:
             else:
                 raise RequestFailedError(response.status)
     
-    async def cloud_access(self):
+    async def cloud_access(self) -> dict:
+        """
+        Fetches cloud access information from the device.
+
+        Only devices with **V5** OS are supported.
+        """
         if self.version != 5:
             raise ValueError("Unsupported/invalid version. Must be 5.")
         
@@ -448,7 +484,12 @@ class client:
             else:
                 raise RequestFailedError(response.status)
 
-    async def usb_info(self):
+    async def usb_info(self) -> dict:
+        """
+        Fetches connected USB devices from the device.
+
+        Only devices with **V5** OS are supported.
+        """
         if self.version != 5:
             raise ValueError("Unsupported/invalid version. Must be 5.")
         
@@ -469,6 +510,8 @@ class client:
     async def uptime(self) -> int:
         """
         Returns the device uptime in seconds (parsed).
+
+        Only devices with **V5** OS are supported.
         """
         if self.version != 5:
             raise ValueError("Unsupported/invalid version. Must be 5.")
