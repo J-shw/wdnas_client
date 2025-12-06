@@ -1,20 +1,33 @@
 # WDNAS-Client
 
-## About
-This module allows users to connect to their local WD NAS and view system info (Storage capacity, Disk temp, volumes etc..)
-Its heavily a WIP and is my first public python module
+[![PyPI Version](https://img.shields.io/pypi/v/wdnas-client.svg)](https://pypi.org/project/wdnas-client/)
 
-My end goal with this is to link into Home Assistant so I can monitor my WD NAS
+This module allows users to connect to their local WD NAS and view system info (storage capacity, disk temp, volumes, etc.). It is a work-in-progress and my first public Python module.
 
-## Code
+Initially built for my Home Assistant integration [ha-mycloud](https://github.com/J-shw/ha-mycloud). I thought I would make it into a python module for a bit of fun and to share the API systems for others to use.
 
-First create the client with the username, password, the host (Be that hostname or IP address)n and the system version number (2 or 5)
+## Features
+* Fetches system info, share names, network status, and more.
+* Asynchronous library using `asyncio` and `client`.
+* Supports V2 and V5 WD NAS firmware.
 
-__Admin account is requred!__
+---
 
-Now call the functions to obtain wanted data - Thats it!
+## Installation
 
-'''python
+```bash
+pip install wdnas-client
+```
+
+---
+
+## Usage
+
+> **Note:** An **admin account** is required for the client to log in.
+
+Here is a basic example of how to connect and pull data:
+
+```python
 import asyncio
 from wdnas_client import client
 
@@ -43,10 +56,20 @@ async def main():
         if version == 5:
             print("Cloud Access:", await wdNAS.cloud_access())
             print("USB Info:", await wdNAS.usb_info())
+            print("Uptime:", await wdNAS.uptime())
 
 if __name__ == "__main__":
     asyncio.run(main())
-'''
-## Important Info
+```
 
-Currently supports V2 and V5 systems
+---
+
+## Documentation
+
+For more detailed information, please see the `docs` folder:
+
+* **[Supported Models](./docs/SUPPORTED_MODELS.md)**
+    * A list of all tested and compatible NAS models and firmware versions.
+
+* **[API Reference](./docs/API.md)**
+    * A detailed breakdown of the V2 and V5 API endpoints this integration uses.

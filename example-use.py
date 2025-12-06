@@ -26,6 +26,7 @@ async def main():
         if version == 5:
             print("Cloud Access:", await wdNAS.cloud_access())
             print("USB Info:", await wdNAS.usb_info())
+            print("Uptime:", await wdNAS.uptime())
 
 if __name__ == "__main__":
     asyncio.run(main())

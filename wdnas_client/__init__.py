@@ -1,11 +1,23 @@
 import aiohttp, json, base64
+import re
+from datetime import timedelta
 from .exceptions import InvalidLoginError, RequestFailedError
 from .const import V2_RAW_LOGIN_STRING, SCHEME, ENDPOINTS
 from xml.etree import ElementTree
 import http.cookies
 
 class client:
-    """Intialise client with username, password, host and version (2 or 5)"""
+    """
+    A client class for interacting with the WD NAS device API's (Versions 2 or 5).
+
+    :host: The hostname or IP address of the device.
+    :username: The username used for authentication (stored in lowercase).
+    :password: The password used for authentication.
+    :version: The API version being used (2 or 5).
+    :session: An aiohttp.ClientSession object for making async requests (initially None).
+    :phpsessid: The PHP session ID token (initially None; set after login).
+    :wd_csrf_token: The CSRF token required for v2 requests (initially None; set after login).
+    """
     def __init__(self, username: str, password: str, host: str, version: int):
         if version not in [2, 5]:
             raise ValueError("Unsupported/invalid version. Must be 2 or 5.")
@@ -26,7 +38,8 @@ class client:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.session.close()
         
-    async def login(self):
+    async def login(self) -> None:
+        """Login to device"""
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['login']}"
 
         enc_password = base64.b64encode(self.password.encode('utf-8')).decode("utf-8")
@@ -75,7 +88,13 @@ class client:
         else:
             raise RequestFailedError(response.status)
     
-    async def system_info(self):
+    async def system_info(self) -> dict:
+        """
+        Fetches system information from the device.
+
+        This includes data about physical **disks**, logical **volumes**, and overall
+        storage **size** (total, used, and unused).
+        """
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_info']}"
         if self.version == 2:     
             headers = {
@@ -128,7 +147,8 @@ class client:
             else:
                 raise RequestFailedError(response.status)
     
-    async def share_names(self):
+    async def share_names(self) -> list:
+        """Fetches a list of all share names configured on the device."""
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['share_names']}"
 
         if self.version == 2:     
@@ -154,7 +174,12 @@ class client:
             else:
                 raise RequestFailedError(response.status)
     
-    async def system_status(self):
+    async def system_status(self) -> dict:
+        """
+        Fetches system status from the device.
+
+        This includes data about **CPU** and **memory** usage.
+        """
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_status']}"
 
         if self.version == 2:     
@@ -186,7 +211,12 @@ class client:
             else:
                 raise RequestFailedError(response.status)
     
-    async def network_info(self):
+    async def network_info(self) -> dict:
+        """
+        Fetches network information from the device.
+
+        This includes device **IP**, **MAC Address** and **Speed**.
+        """
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['network_info']}"
 
         if self.version == 2:
@@ -226,7 +256,12 @@ class client:
             else:
                 raise RequestFailedError(response.status)
 
-    async def device_info(self):
+    async def device_info(self) -> dict:
+        """
+        Fetches device information from the device.
+
+        Data such as **Serial Number**, **Name** and **Description** are returned.
+        """
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['device_info']}"
         if self.version == 2:
             data = 'cmd=cgi_get_device_info'
@@ -248,15 +283,26 @@ class client:
             if response.status == 200:
                 content = await response.text()
                 device_info = ElementTree.fromstring(content)
+
                 json_device_info = {"serial_number": None, "name": None, "description": None}
-                json_device_info['serial_number'] = device_info.find('.//serial_number').text
-                json_device_info['name'] = device_info.find('.//name').text
-                json_device_info['description'] = device_info.find('.//description').text
+
+                serial_number_node = device_info.find('.//serial_number')
+                name_node = device_info.find('.//name')
+                description_node = device_info.find('.//description')
+
+                if serial_number_node is not None:
+                    json_device_info["serial_number"] = serial_number_node.text
+                if name_node is not None:
+                    json_device_info["name"] = name_node.text
+                if description_node is not None:
+                    json_device_info["description"] = description_node.text
+
                 return json_device_info
             else:
                 raise RequestFailedError(response.status)
 
-    async def system_version(self):
+    async def system_version(self) -> dict:
+        """Fetches system firmware version from the device."""
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['system_version']}"
         if self.version == 2:
             data = 'cmd=get_firm_v_xml'
@@ -279,13 +325,25 @@ class client:
                 content = await response.text()
                 device_version = ElementTree.fromstring(content)
                 json_device_version = {"firmware": None, "oled": None}
-                json_device_version['firmware'] = device_version.find('.//fw').text
-                json_device_version['oled'] = device_version.find('.//oled').text.strip('\n')
+
+                firmware_node = device_version.find('.//fw')
+                oled_node = device_version.find('.//oled')
+
+                if firmware_node is not None:
+                    json_device_version["firmware"] = firmware_node.text
+                if oled_node is not None:
+                    json_device_version["oled"] = oled_node.text.strip('\n')
+
                 return json_device_version
             else:
                 raise RequestFailedError(response.status)
                      
-    async def latest_version(self):
+    async def latest_version(self) -> dict:
+        """
+        Fetches the latest firmware version from the device.
+
+        Only devices with **V2** OS are supported.
+        """
         if self.version != 2:
             raise ValueError("Unsupported/invalid version. Must be 2.")
         
@@ -302,15 +360,28 @@ class client:
                 content = await response.text()
                 latest_version = ElementTree.fromstring(content)
                 json_latest_version = {"new": None, "details": {}}
-                json_latest_version['new'] = bool(int(latest_version.find('.//new').text))
-                json_latest_version['details']['version'] = latest_version.find('.//version').text
-                json_latest_version['details']['path'] = latest_version.find('.//path').text
-                json_latest_version['details']['releasenote'] = latest_version.find('.//releasenote').text
+
+                new_node = latest_version.find('.//new')
+                version_node = latest_version.find('.//version')
+                path_node = latest_version.find('.//path')
+                releasenote_node = latest_version.find('.//releasenote')
+
+
+                if new_node is not None:
+                    json_latest_version["new"] = bool(int(new_node.text))
+                if version_node is not None:
+                    json_latest_version["details"]["version"] = version_node.text
+                if path_node is not None:
+                    json_latest_version["details"]["path"] = path_node.text
+                if releasenote_node is not None:
+                    json_latest_version["details"]["releasenote"] = releasenote_node.text
+                
                 return json_latest_version
             else:
                 raise RequestFailedError(response.status)
     
-    async def accounts(self):
+    async def accounts(self) -> dict:
+        """Fetches account information from the device."""
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['accounts']}"
         if self.version == 2:
             headers = {
@@ -361,7 +432,8 @@ class client:
             else:
                 raise RequestFailedError(response.status)
     
-    async def alerts(self):
+    async def alerts(self) -> tuple:
+        """Retrieves the current system alerts and notifications from the device."""
         url = f"{SCHEME}{self.host}{ENDPOINTS[self.version]['alerts']}"
         data = 'cmd=cgi_get_alert'
         if self.version == 2:
@@ -381,22 +453,28 @@ class client:
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status == 200:
                 content = await response.text()
-                alerts = ElementTree.fromstring(content)
-                json_alerts = []
-                for user in alerts.iter('alerts'):
-                    json_alerts.append ({
-                        "code": user.findtext('code'),
-                        "seq_num": user.findtext('seq_num'),
-                        "level": user.findtext('level'),
-                        "msg": user.findtext('msg'),
-                        "desc": user.findtext('desc'),
-                        "time": user.findtext('time'),
+                alerts_xml = ElementTree.fromstring(content)
+                alerts_list = []
+                for entry in alerts_xml.iter("alerts"):
+                    alerts_list.append({
+                        "code": entry.findtext("code"),
+                        "seq_num": entry.findtext("seq_num"),
+                        "level": entry.findtext("level"),
+                        "msg": entry.findtext("msg"),
+                        "desc": entry.findtext("desc"),
+                        "time": entry.findtext("time")
                     })
-                return json_alerts
+        
+                return len(alerts_list), alerts_list
             else:
                 raise RequestFailedError(response.status)
     
-    async def cloud_access(self):
+    async def cloud_access(self) -> dict:
+        """
+        Fetches cloud access information from the device.
+
+        Only devices with **V5** OS are supported.
+        """
         if self.version != 5:
             raise ValueError("Unsupported/invalid version. Must be 5.")
         
@@ -416,7 +494,12 @@ class client:
             else:
                 raise RequestFailedError(response.status)
 
-    async def usb_info(self):
+    async def usb_info(self) -> dict:
+        """
+        Fetches connected USB devices from the device.
+
+        Only devices with **V5** OS are supported.
+        """
         if self.version != 5:
             raise ValueError("Unsupported/invalid version. Must be 5.")
         
@@ -433,3 +516,45 @@ class client:
                 return json_content
             else:
                 raise RequestFailedError(response.status)
+    
+    async def uptime(self) -> int:
+        """
+        Returns the device uptime in seconds (parsed).
+
+        Only devices with **V5** OS are supported.
+        """
+        if self.version != 5:
+            raise ValueError("Unsupported/invalid version. Must be 5.")
+    
+        url = f"{SCHEME}{self.host}/cgi-bin/status_mgr.cgi"
+    
+        headers = {
+            "Host": self.host,
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        }
+    
+        data = "cmd=cgi_get_uptime"
+    
+        async with self.session.post(url, data=data, headers=headers) as response:
+            if response.status != 200:
+                raise RequestFailedError(response.status)
+    
+            text = await response.text()
+    
+            match = re.search(r"<uptime>(.*?)</uptime>", text, re.S)
+            if not match:
+                raise RequestFailedError("Uptime not found in XML response.")
+    
+            uptime_raw = match.group(1).strip()
+    
+            match = re.search(
+                r"(\d+)\s*days?\s*(\d+)\s*hour[s]?\s*(\d+)\s*minute[s]?",
+                uptime_raw,
+                re.I,
+            )
+    
+            if not match:
+                raise RequestFailedError(f"Unexpected uptime format: {uptime_raw}")
+    
+            d, h, m = map(int, match.groups())
+            return int(timedelta(days=d, hours=h, minutes=m).total_seconds())
