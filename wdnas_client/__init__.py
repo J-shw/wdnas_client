@@ -290,12 +290,9 @@ class client:
                 name_node = device_info.find('.//name')
                 description_node = device_info.find('.//description')
 
-                if serial_number_node is not None:
-                    json_device_info["serial_number"] = serial_number_node.text
-                if name_node is not None:
-                    json_device_info["name"] = name_node.text
-                if description_node is not None:
-                    json_device_info["description"] = description_node.text
+                json_device_info["serial_number"] = serial_number_node.text
+                json_device_info["name"] = name_node.text
+                json_device_info["description"] = description_node.text
 
                 return json_device_info
             else:
@@ -329,9 +326,9 @@ class client:
                 firmware_node = device_version.find('.//fw')
                 oled_node = device_version.find('.//oled')
 
-                if firmware_node is not None:
-                    json_device_version["firmware"] = firmware_node.text
-                if oled_node is not None:
+                json_device_version["firmware"] = firmware_node.text
+
+                if oled_node.text is not None:
                     json_device_version["oled"] = oled_node.text.strip('\n')
 
                 return json_device_version
@@ -367,14 +364,14 @@ class client:
                 releasenote_node = latest_version.find('.//releasenote')
 
 
-                if new_node is not None:
+                if new_node.text is not None:
                     json_latest_version["new"] = bool(int(new_node.text))
-                if version_node is not None:
-                    json_latest_version["details"]["version"] = version_node.text
-                if path_node is not None:
-                    json_latest_version["details"]["path"] = path_node.text
-                if releasenote_node is not None:
-                    json_latest_version["details"]["releasenote"] = releasenote_node.text
+                else:
+                    json_latest_version["new"] = False
+   
+                json_latest_version["details"]["version"] = version_node.text
+                json_latest_version["details"]["path"] = path_node.text
+                json_latest_version["details"]["releasenote"] = releasenote_node.text
                 
                 return json_latest_version
             else:
