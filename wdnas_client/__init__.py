@@ -519,10 +519,21 @@ class client:
         Returns the device uptime in seconds (parsed).
 
         Only devices with **V5** OS are supported.
+
+        Some V5 firmware (e.g. 5.33.103) answers `cgi_get_uptime` with an empty HTTP 500.
+        The same `<uptime>` text is part of the `cgi_get_status` response, which is
+        used as a fallback.
         """
         if self.version != 5:
             raise ValueError("Unsupported/invalid version. Must be 5.")
-    
+
+        try:
+            return await self._uptime_from("cgi_get_uptime")
+        except RequestFailedError:
+            return await self._uptime_from("cgi_get_status")
+
+    async def _uptime_from(self, cmd: str) -> int:
+        """Fetches and parses the `<uptime>` text from a status_mgr.cgi command."""
         url = f"{SCHEME}{self.host}/cgi-bin/status_mgr.cgi"
     
         headers = {
@@ -530,7 +541,7 @@ class client:
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
         }
     
-        data = "cmd=cgi_get_uptime"
+        data = f"cmd={cmd}"
     
         async with self.session.post(url, data=data, headers=headers) as response:
             if response.status != 200:
