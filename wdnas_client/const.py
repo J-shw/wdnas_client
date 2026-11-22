@@ -1,6 +1,7 @@
 V2_RAW_LOGIN_STRING = 'cmd=wd_login&username={username}&pwd={enc_password}'
 
 SCHEME = "http://"
+POWER_ACTION_TIMEOUT = 15
 
 ENDPOINTS = {
     2: {
@@ -25,6 +26,8 @@ ENDPOINTS = {
         "system_version": "/cgi-bin/system_mgr.cgi",
         "latest_version": "/cgi-bin/system_mgr.cgi",
         "accounts": "/xml/account.xml",
-        "alerts": "/cgi-bin/system_mgr.cgi"
+        "alerts": "/cgi-bin/system_mgr.cgi",
+        "power_safety": "/cgi-bin/hd_config.cgi",
+        "power_action": "/cgi-bin/system_mgr.cgi"
     }
 }

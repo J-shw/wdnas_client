@@ -1,8 +1,9 @@
+import asyncio
 import aiohttp, json, base64
 import re
 from datetime import timedelta
-from .exceptions import InvalidLoginError, RequestFailedError
-from .const import V2_RAW_LOGIN_STRING, SCHEME, ENDPOINTS
+from .exceptions import InvalidLoginError, PowerActionBlockedError, RequestFailedError
+from .const import V2_RAW_LOGIN_STRING, SCHEME, ENDPOINTS, POWER_ACTION_TIMEOUT
 from xml.etree import ElementTree
 import http.cookies
 
@@ -87,6 +88,63 @@ class client:
                     self.phpsessid = cookies["PHPSESSID"].value
         else:
             raise RequestFailedError(response.status)
+
+    async def _power_action(self, command: str) -> None:
+        """Run one guarded OS 5 power command using the existing session."""
+        if self.version != 5:
+            raise ValueError("Unsupported/invalid version. Must be 5.")
+        if command not in ("cgi_restart", "cgi_shutdown"):
+            raise ValueError("Unsupported power action.")
+        if self.session is None or getattr(self.session, "closed", False):
+            raise InvalidLoginError("An authenticated NAS session is required")
+
+        safety_url = f"{SCHEME}{self.host}{ENDPOINTS[5]['power_safety']}"
+        action_url = f"{SCHEME}{self.host}{ENDPOINTS[5]['power_action']}"
+        headers = {
+            "Host": self.host,
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        }
+
+        async with asyncio.timeout(POWER_ACTION_TIMEOUT):
+            async with self.session.post(
+                safety_url,
+                data="cmd=cgi_Detect_Dangerous",
+                headers=headers,
+            ) as response:
+                if response.status != 200:
+                    raise RequestFailedError(response.status)
+                root = ElementTree.fromstring(await response.text())
+
+            result_text = root.findtext(".//res")
+            try:
+                result = int(result_text)
+            except (TypeError, ValueError) as error:
+                raise ValueError(
+                    "Power safety response did not contain a numeric res"
+                ) from error
+            if result != 0:
+                raise PowerActionBlockedError(result)
+
+            try:
+                async with self.session.post(
+                    action_url,
+                    data=f"cmd={command}",
+                    headers=headers,
+                ) as response:
+                    if response.status != 200:
+                        raise RequestFailedError(response.status)
+                    await response.text()
+            except aiohttp.ServerDisconnectedError:
+                # A confirmed power command may terminate HTTP before a response.
+                return
+
+    async def reboot(self) -> None:
+        """Restart an OS 5 NAS using the existing authenticated session."""
+        await self._power_action("cgi_restart")
+
+    async def shutdown(self) -> None:
+        """Shut down an OS 5 NAS using the existing authenticated session."""
+        await self._power_action("cgi_shutdown")
     
     async def system_info(self) -> dict:
         """

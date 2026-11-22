@@ -32,3 +32,6 @@ This document outlines the API endpoints for the WD NAS systems supported by thi
 | Alerts | `POST` | `/cgi-bin/system_mgr.cgi` | `cmd=cgi_get_alert` | `application/x-www-form-urlencoded` body |
 | Cloud Access | `POST` | `/web/restSDK/cloudAccess.php` | `cmd=getCloudAccess` | `application/x-www-form-urlencoded` body |
 | USB Info | `POST` | `/web/get_usb_info.php` | *None* | |
+| Power Safety Check | `POST` | `/cgi-bin/hd_config.cgi` | `cmd=cgi_Detect_Dangerous` | A numeric `res` value of `0` is required before a power action |
+| Reboot | `POST` | `/cgi-bin/system_mgr.cgi` | `cmd=cgi_restart` | Sent once after a successful safety check |
+| Shutdown | `POST` | `/cgi-bin/system_mgr.cgi` | `cmd=cgi_shutdown` | Sent once after a successful safety check |
