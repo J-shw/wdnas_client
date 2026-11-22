@@ -1,6 +1,7 @@
 V2_RAW_LOGIN_STRING = 'cmd=wd_login&username={username}&pwd={enc_password}'
 
 SCHEME = "http://"
+SESSION_ACTION_TIMEOUT = 15
 
 ENDPOINTS = {
     2: {
@@ -17,6 +18,7 @@ ENDPOINTS = {
     },
     5: {
         "login": "/nas/v1/auth",
+        "logout": "/nas/v1/auth",
         "system_info": "/xml/sysinfo.xml",
         "share_names": "/web/get_share_name_list.php",
         "system_status": "/cgi-bin/status_mgr.cgi",

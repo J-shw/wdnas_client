@@ -22,6 +22,7 @@ This document outlines the API endpoints for the WD NAS systems supported by thi
 | Function | HTTP Method | Endpoint | Parameters / Body | Notes |
 | --- | --- | --- | --- | --- |
 | Login | `POST` | `/nas/v1/auth` | `{"username":"user1","password":"alisdh2309oas"}` | `application/json` body |
+| Logout | `DELETE` | `/nas/v1/auth` | *None* | Sent on client close only when the client owns the OS 5 session |
 | System Info | `GET` | `/xml/sysinfo.xml` | *None* | |
 | Share Names | `POST` | `/web/get_share_name_list.php` | *None* | |
 | System Status | `POST` | `/cgi-bin/status_mgr.cgi` | `cmd=cgi_get_general` | `application/x-www-form-urlencoded` body |
